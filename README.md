@@ -1,9 +1,6 @@
 # ParkSpotter
 
 date: 08-05-2024
-Wednesday
+Wednesday time: 6:20pm
 
-time: 6:20pm
-
-Jafor Sadek Branch Test
-
+Day 01: Github collaboration
