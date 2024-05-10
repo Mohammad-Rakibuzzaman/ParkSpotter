@@ -18,7 +18,7 @@ class ParkOwner(models.Model):
     payment_method = models.CharField(max_length=200)
     card_no = models.CharField(max_length=50)
     amount=models.DecimalField(max_digits=12)
-    payment_date = models.DateField()
+    payment_date = models.DateField()      
     joined_date = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     def __str__(self):
