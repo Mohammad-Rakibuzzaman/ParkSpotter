@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-afgt$dx*kg4_a9hi6(0i-jmrc9rv@6dx$20=h4ad-%ox+xd!7v
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["parkspottermain.pythonanywhere.com"]
 
 
 # Application definition
