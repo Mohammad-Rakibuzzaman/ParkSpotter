@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-afgt$dx*kg4_a9hi6(0i-jmrc9rv@6dx$20=h4ad-%ox+xd!7v
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["parkspottermain.pythonanywhere.com"]
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -134,6 +134,7 @@ import os
 
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
