@@ -69,7 +69,7 @@ class UserLoginApiView(APIView):
 
             if user is not None:
                 try:
-                    park_owner = ParkOwner.objects.get(user=user)
+                    park_owner = ParkOwner.objects.get(park_owner_id =user)
                 except ParkOwner.DoesNotExist:
                     return Response(
                         {"detail": "User is not a park owner."},                        status=status.HTTP_403_FORBIDDEN
