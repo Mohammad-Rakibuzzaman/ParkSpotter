@@ -10,13 +10,13 @@ class RegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
     first_name = serializers.CharField(write_only=True, required=True)
     last_name = serializers.CharField(write_only=True, required=True)
-    payment_date = serializers.DateField(write_only=True, required=True)
+    payment_date = serializers.DateField(write_only=True,required=False)
     image = serializers.ImageField(required=False, write_only=True)
 
     class Meta:
         model = ParkOwner
         fields = ['username', 'first_name', 'last_name', 'mobile_no',
-                  'nid_card_no', 'email', 'password', 'confirm_password', 'slot_size', 'capacity', 'address', 'area', 'payment_method', 'card_no', 'amount', 'payment_date','image']
+                  'nid_card_no', 'email', 'password', 'confirm_password', 'slot_size', 'capacity', 'address', 'area', 'payment_method', 'amount', 'payment_date','image']
 
     def save(self):
         username = self.validated_data['username']
@@ -32,7 +32,6 @@ class RegistrationSerializer(serializers.ModelSerializer):
         address = self.validated_data['address']
         area = self.validated_data['area']
         payment_method = self.validated_data['payment_method']
-        card_no = self.validated_data['card_no']
         amount = self.validated_data['amount']
         payment_date = self.validated_data['payment_date']
         image = self.validated_data.get('image', None)
@@ -52,8 +51,8 @@ class RegistrationSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.is_active = False
         user.save()
-        ParkOwner.objects.create(user=user, mobile_no=mobile_no,
-                                 id=user.id, nid_card_no=nid_card_no, address=address, slot_size=slot_size, capacity=capacity, area=area, payment_method=payment_method, card_no=card_no, payment_date=payment_date, image=image,amount=amount)
+        ParkOwner.objects.create(park_owner_id=user, mobile_no=mobile_no,
+                                 id=user.id, nid_card_no=nid_card_no, address=address, slot_size=slot_size, capacity=capacity, area=area, payment_method=payment_method, payment_date=payment_date, image=image,amount=amount)
 
         return user
 

@@ -31,7 +31,7 @@ class UserRegistrationApiView(APIView):
             current_site = get_current_site(request)
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
-            confirm_link = f"{request.scheme}://{current_site.domain}/user/active/{uid}/{token}"
+            confirm_link = f"{request.scheme}://{current_site.domain}/accounts/active/{uid}/{token}"
             email_subject = "Confirm Your Email"
             email_body = render_to_string('confirm_email.html', {'confirm_link' : confirm_link})
             
@@ -51,10 +51,11 @@ def activate(request, uid64, token):
     
     if user is not None and default_token_generator.check_token(user, token):
         user.is_active = True
+        user.is_staff = True
         user.save()
-        return redirect('https://parkspottermain.pythonanywhere.com/')
+        return redirect('https://development-parkspotter.netlify.app/login')
     else:
-        return redirect('https://parkspottermain.pythonanywhere.com/')
+        return redirect('https://development-parkspotter.netlify.app/login')
     
 
 class UserLoginApiView(APIView):
