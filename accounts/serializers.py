@@ -10,7 +10,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
     first_name = serializers.CharField(write_only=True, required=True)
     last_name = serializers.CharField(write_only=True, required=True)
-    payment_date = serializers.DateField(write_only=True, required=True)
+    payment_date = serializers.DateField(write_only=True)
     image = serializers.ImageField(required=False, write_only=True)
 
     class Meta:
