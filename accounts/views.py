@@ -90,3 +90,10 @@ class UserLoginApiView(APIView):
                 return Response({'error': "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserLogoutView(APIView):
+    def get(self, request):
+        request.user.auth_token.delete()
+        logout(request)
+        return redirect('login')
