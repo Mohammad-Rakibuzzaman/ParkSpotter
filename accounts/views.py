@@ -17,7 +17,7 @@ from django.template.loader import render_to_string
 from django.shortcuts import redirect
 from django.contrib.sites.shortcuts import get_current_site
 from rest_framework import generics
-
+from .models import ParkOwner
 # Create your views here.
 
 class UserRegistrationApiView(APIView):
@@ -55,3 +55,37 @@ def activate(request, uid64, token):
         return redirect('https://parkspottermain.pythonanywhere.com/')
     else:
         return redirect('https://parkspottermain.pythonanywhere.com/')
+    
+
+class UserLoginApiView(APIView):
+    def post(self, request):
+        serializer = serializers.UserLoginSerializer(data=request.data)
+
+        if serializer.is_valid():
+            username = serializer.validated_data['username']
+            password = serializer.validated_data['password']
+
+            user = authenticate(username=username, password=password)
+
+            if user is not None:
+                try:
+                    park_owner = ParkOwner.objects.get(user=user)
+                except ParkOwner.DoesNotExist:
+                    return Response(
+                        {"detail": "User is not a park owner."},                        status=status.HTTP_403_FORBIDDEN
+                    )
+                token, _ = Token.objects.get_or_create(user=user)
+
+                login(request, user)
+                is_staff = user.is_staff
+                return Response({
+                    'token': token.key,
+                    'user_id': user.id,
+                    'is_staff': is_staff
+                })
+
+            else:
+                
+                return Response({'error': "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

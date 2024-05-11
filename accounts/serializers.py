@@ -1,4 +1,4 @@
-from rest_framework import serializers
+from rest_framework import serializers, status
 from django.contrib.auth.models import User
 from .models import ParkOwner
 
@@ -55,3 +55,30 @@ class RegistrationSerializer(serializers.ModelSerializer):
                                  id=user.id, nid_card_no=nid_card_no, address=address, slot_size=slot_size, capacity=capacity, area=area, payment_method=payment_method, card_no=card_no, payment_date=payment_date, image=image)
 
         return user
+
+
+class UserLoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField()
+
+    def validate(self, data):
+        username = data.get('username')
+        password = data.get('password')
+
+        if username and password:
+            user = User.objects.filter(username=username).first()
+
+            if user and user.check_password(password):
+                return data
+            else:
+                raise serializers.ValidationError(
+                    "Incorrect username or password.",
+                    code='invalid_credentials',
+                    status_code=status.HTTP_401_UNAUTHORIZED
+                )
+        else:
+            raise serializers.ValidationError(
+                "Both username and password are required.",
+                code='missing_credentials',
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
