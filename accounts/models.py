@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 
 
 class ParkOwner(models.Model):
-    user = models.OneToOneField(User, related_name="owner", on_delete=models.CASCADE)
+    park_owner_id = models.OneToOneField(User, related_name="owner", on_delete=models.CASCADE)
     image = models.ImageField(upload_to='media/owner_images/', blank=True, null=True)
     mobile_no = models.CharField(max_length=11)
     email=models.EmailField()
@@ -13,11 +13,10 @@ class ParkOwner(models.Model):
     capacity = models.CharField(max_length=200)
     address = models.CharField(max_length=200, blank=True, null=True)
     area = models.CharField(max_length=200)
-    payment_method = models.CharField(max_length=200)
-    card_no = models.CharField(max_length=50)
-    amount=models.DecimalField(max_digits=12, decimal_places=2)
-    payment_date = models.DateField(auto_now_add=True)      
+    payment_method = models.CharField(max_length=200,null=True)
+    amount=models.DecimalField(max_digits=12, decimal_places=2, null=True)
+    payment_date = models.DateField(auto_now_add=True, null=True)      
     joined_date = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     def __str__(self):
-        return self.user.username
+        return self.park_owner_id.username
