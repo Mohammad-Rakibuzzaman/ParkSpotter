@@ -33,6 +33,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
         area = self.validated_data['area']
         payment_method = self.validated_data['payment_method']
         card_no = self.validated_data['card_no']
+        amount = self.validated_data['amount']
         payment_date = self.validated_data['payment_date']
         image = self.validated_data.get('image', None)
 
@@ -52,7 +53,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
         user.is_active = False
         user.save()
         ParkOwner.objects.create(user=user, mobile_no=mobile_no,
-                                 id=user.id, nid_card_no=nid_card_no, address=address, slot_size=slot_size, capacity=capacity, area=area, payment_method=payment_method, card_no=card_no, payment_date=payment_date, image=image)
+                                 id=user.id, nid_card_no=nid_card_no, address=address, slot_size=slot_size, capacity=capacity, area=area, payment_method=payment_method, card_no=card_no, payment_date=payment_date, image=image,amount=amount)
 
         return user
 
