@@ -10,5 +10,5 @@ Day 02: Login and Registration authentication
 
 ## API has been created successfully for Registration anad Login
 
-api link: https://parkspottermain.pythonanywhere.com/accounts/register/
+api link: https://parkspottermain.pythonanywhere.com/accounts/register/ <br>
 login api: https://parkspottermain.pythonanywhere.com/accounts/user_login/
