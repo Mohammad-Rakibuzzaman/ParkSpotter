@@ -135,8 +135,11 @@ import os
 STATIC_URL = '/static/'
 STATIC_ROOT='staticfiles'
 MEDIA_URL = '/media/'
-
-
+# 'parkspottermain.pythonanywhere.com'
+# git add ParkSpotter/settings.py db.sqlite3
+# git commit - m "Committing local changes before pulling"
+# git config - -global user.email "dev.rakibuzzaman@gmail.com"
+# git config - -global user.name "Mohammad-Rakibuzzaman"
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
