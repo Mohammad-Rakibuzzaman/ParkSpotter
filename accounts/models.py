@@ -13,9 +13,9 @@ class ParkOwner(models.Model):
     capacity = models.CharField(max_length=200)
     address = models.CharField(max_length=200, blank=True, null=True)
     area = models.CharField(max_length=200)
-    payment_method = models.CharField(max_length=200,null=True)
-    amount=models.DecimalField(max_digits=12, decimal_places=2, null=True)
-    payment_date = models.DateField(auto_now_add=True, null=True)      
+    payment_method = models.CharField(max_length=200,null=True, blank=True)
+    amount=models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    payment_date = models.DateField(auto_now_add=True, null=True, blank=True)      
     joined_date = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     def __str__(self):
