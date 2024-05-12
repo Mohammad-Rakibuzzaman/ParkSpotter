@@ -12,3 +12,4 @@ class UserProfileAdmin(admin.ModelAdmin):
     
     
 admin.site.register(models.ParkOwner, UserProfileAdmin)
+admin.site.register(models.Park_Detail)
