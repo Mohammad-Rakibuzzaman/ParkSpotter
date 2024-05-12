@@ -1,11 +1,11 @@
 from django.db import models
 from django.contrib.auth.models import User
 import math
-from .constants import TIME_SLOT, PARK_PLAN
+from .constants import TIME_SLOT
 
 # Create your models here.
 
-
+PARK_PLAN = []
 class ParkOwner(models.Model):
     park_owner_id = models.OneToOneField(User, related_name="owner", on_delete=models.CASCADE)
     image = models.ImageField(upload_to='media/owner_images/', blank=True, null=True)
@@ -20,6 +20,13 @@ class ParkOwner(models.Model):
     amount=models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     payment_date = models.DateField(auto_now_add=True, null=True, blank=True)      
     joined_date = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    def save(self, *args, **kwargs):
+
+        global PARK_PLAN 
+        PARK_PLAN.clear() 
+        for slot_number in range(1, int(self.capacity) + 1):
+            PARK_PLAN.append((str(slot_number), str(slot_number)))
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.park_owner_id.username
@@ -35,7 +42,7 @@ class Employee(models.Model):
 
 
 class Park_Detail(models.Model):
-    park_owner = models.ForeignKey(
+    park_owner_id = models.ForeignKey(
         ParkOwner, related_name="park_details", on_delete=models.CASCADE)
     capacity = models.PositiveIntegerField(default=10)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -43,38 +50,13 @@ class Park_Detail(models.Model):
     def str(self):
         return f"Park Detail for {self.park_owner.id}"
 
-    # def save(self, *args, **kwargs):
-    #     # Generate the park_plan_text before saving
-    #     self.park_plan_text = self.generate_park_plan_text()
-    #     super(Park_Detail, self).save(*args, **kwargs)
-
-    # def generate_park_plan_text(self):
-    #     park_plan_text = ""
-
-    #     for i in range(1, self.capacity + 1):
-    #         park_plan_text += f"(1,{i}) "
-
-    #     return park_plan_text.strip()
-
 
 class Vehicle(models.Model):
     plate_number=models.CharField(max_length=20)
     mobile_no = models.CharField(max_length=12)
 
-PARK_PLAN=[
-    ('1','1'),
-    ('2','2'),
-    ('3','3'),
-    ('4','4'),
-    ('5','5'),
-    ('6','6'),
-    ('7','7'),
-    ('8','8'),
-    ('9','9'),
-    ('10','10')
-]
 class Booking (models.Model):
-    park_detail=models.ForeignKey(Park_Detail, on_delete=models.CASCADE)
+    park_detail_id=models.ForeignKey(Park_Detail, on_delete=models.CASCADE)
     vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE)
     slot = models.IntegerField(choices=PARK_PLAN,default=1)
     fine=models.IntegerField(default=0,null=True,blank=True)
