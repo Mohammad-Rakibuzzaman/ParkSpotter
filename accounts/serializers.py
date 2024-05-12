@@ -1,6 +1,6 @@
 from rest_framework import serializers, status
 from django.contrib.auth.models import User
-from .models import ParkOwner
+from .models import ParkOwner, Park_Detail, Booking, Vehicle
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -16,7 +16,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = ParkOwner
         fields = ['username', 'first_name', 'last_name', 'mobile_no',
-                  'nid_card_no', 'email', 'password', 'confirm_password', 'slot_size', 'capacity', 'address', 'area', 'payment_method', 'amount', 'payment_date','image']
+                  'nid_card_no', 'email', 'password', 'confirm_password', 'slot_size', 'capacity', 'address', 'area', 'payment_method', 'amount', 'payment_date','image']  
 
     def save(self):
         username = self.validated_data['username']
@@ -82,3 +82,17 @@ class UserLoginSerializer(serializers.Serializer):
                 code='missing_credentials',
                 status_code=status.HTTP_400_BAD_REQUEST
             )
+
+#12-5 for parkdetail by rtz
+class ParkDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Park_Detail
+        fields = ['id', 'park_owner', 'capacity', 'created_at']
+class VehicleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vehicle
+        fields = ['plate_number', 'mobile_no']
+class BookingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Booking
+        fields = ['id','vehicle','slot','time_slot']
