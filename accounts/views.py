@@ -110,7 +110,7 @@ class UserLogoutView(APIView):
 class ParkDetailListView(generics.ListAPIView):
     queryset = Park_Detail.objects.all()
     serializer_class = ParkDetailSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
     
 
 

@@ -16,7 +16,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = ParkOwner
         fields = ['username', 'first_name', 'last_name', 'mobile_no',
-                  'nid_card_no', 'email', 'password', 'confirm_password', 'slot_size', 'capacity', 'address', 'area', 'payment_method', 'amount', 'payment_date','image']
+                  'nid_card_no', 'email', 'password', 'confirm_password', 'slot_size', 'capacity', 'address', 'area', 'payment_method', 'amount', 'payment_date','image']  
 
     def save(self):
         username = self.validated_data['username']
@@ -87,4 +87,4 @@ class UserLoginSerializer(serializers.Serializer):
 class ParkDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Park_Detail
-        fields = ['id', 'park_owner', 'capacity', 'created_at', 'park_plan_text']
+        fields = ['id', 'park_owner', 'capacity', 'created_at']
