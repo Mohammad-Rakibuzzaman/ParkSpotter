@@ -20,5 +20,3 @@ class ParkOwner(models.Model):
 
     def __str__(self):
         return self.park_owner_id.username
-
-
