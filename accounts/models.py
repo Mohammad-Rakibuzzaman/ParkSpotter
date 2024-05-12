@@ -32,6 +32,8 @@ class ParkOwner(models.Model):
         return self.park_owner_id.username
 
 class Employee(models.Model):
+    park_owner_id = models.ForeignKey(
+        ParkOwner, related_name="park_owner", on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length=50)
     mobile_no = models.CharField(max_length=12)
     qualification = models.CharField(max_length=50, null=True, blank=True)
@@ -61,6 +63,7 @@ class Booking (models.Model):
     slot = models.IntegerField(choices=PARK_PLAN,default=1)
     fine=models.IntegerField(default=0,null=True,blank=True)
     time_slot = models.IntegerField(choices=TIME_SLOT)
+    status=models.BooleanField(default=False)
     check_in_time = models.DateTimeField(auto_now_add=True)
     check_out_time = models.DateTimeField(blank=True, null=True)
 
