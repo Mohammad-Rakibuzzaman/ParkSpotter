@@ -3,7 +3,7 @@ from rest_framework import viewsets
 from . import models
 from . import serializers
 #12-5 added by rtz
-from .serializers import ParkDetailSerializer
+from .serializers import ParkDetailSerializer, BookingSerializer, VehicleSerializer
 from rest_framework.permissions import IsAuthenticated
 
 
@@ -23,7 +23,7 @@ from django.shortcuts import redirect
 from django.contrib.sites.shortcuts import get_current_site
 from rest_framework import generics
 #rtz added 12-5
-from .models import ParkOwner, Park_Detail
+from .models import ParkOwner, Park_Detail, Booking, Vehicle
 
 
 # Create your views here.
@@ -113,4 +113,11 @@ class ParkDetailListView(generics.ListAPIView):
     # permission_classes = [IsAuthenticated]
     
 
+class VehicleListView(generics.ListAPIView):
+    queryset = Vehicle.objects.all()
+    serializer_class = VehicleSerializer
+
+class BookingListView(generics.ListAPIView):
+    queryset = Booking.objects.all()
+    serializer_class = BookingSerializer
 

@@ -1,6 +1,6 @@
 from rest_framework import serializers, status
 from django.contrib.auth.models import User
-from .models import ParkOwner, Park_Detail
+from .models import ParkOwner, Park_Detail, Booking, Vehicle
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -88,3 +88,11 @@ class ParkDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Park_Detail
         fields = ['id', 'park_owner', 'capacity', 'created_at']
+class VehicleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vehicle
+        fields = ['plate_number', 'mobile_no']
+class BookingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Booking
+        fields = ['id','vehicle','slot','time_slot']
