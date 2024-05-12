@@ -1,6 +1,6 @@
 from rest_framework import serializers, status
 from django.contrib.auth.models import User
-from .models import ParkOwner
+from .models import ParkOwner, Park_Detail
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -82,3 +82,9 @@ class UserLoginSerializer(serializers.Serializer):
                 code='missing_credentials',
                 status_code=status.HTTP_400_BAD_REQUEST
             )
+
+#12-5 for parkdetail by rtz
+class ParkDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Park_Detail
+        fields = ['id', 'park_owner', 'capacity', 'created_at', 'park_plan_text']

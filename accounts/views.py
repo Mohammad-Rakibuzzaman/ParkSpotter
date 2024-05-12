@@ -2,6 +2,11 @@ from django.shortcuts import render
 from rest_framework import viewsets
 from . import models
 from . import serializers
+#12-5 added by rtz
+from .serializers import ParkDetailSerializer
+from rest_framework.permissions import IsAuthenticated
+
+
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -17,7 +22,10 @@ from django.template.loader import render_to_string
 from django.shortcuts import redirect
 from django.contrib.sites.shortcuts import get_current_site
 from rest_framework import generics
-from .models import ParkOwner
+#rtz added 12-5
+from .models import ParkOwner, Park_Detail
+
+
 # Create your views here.
 
 class UserRegistrationApiView(APIView):
@@ -97,3 +105,12 @@ class UserLogoutView(APIView):
         request.user.auth_token.delete()
         logout(request)
         return redirect('login')
+    
+#12.5 rtzaddedd
+class ParkDetailListView(generics.ListAPIView):
+    queryset = Park_Detail.objects.all()
+    serializer_class = ParkDetailSerializer
+    permission_classes = [IsAuthenticated]
+    
+
+
