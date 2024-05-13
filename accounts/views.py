@@ -117,7 +117,7 @@ class VehicleListView(generics.ListAPIView):
     queryset = Vehicle.objects.all()
     serializer_class = VehicleSerializer
 
-class BookingListView(generics.ListAPIView):
+class BookingListView(generics.ListCreateAPIView):
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
 

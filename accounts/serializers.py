@@ -93,6 +93,7 @@ class VehicleSerializer(serializers.ModelSerializer):
         model = Vehicle
         fields = ['plate_number', 'mobile_no']
 class BookingSerializer(serializers.ModelSerializer):
+    vehicle = serializers.CharField()
     class Meta:
         model = Booking
         fields = ['id','vehicle','slot','time_slot']
