@@ -87,7 +87,7 @@ class UserLoginSerializer(serializers.Serializer):
 class ParkDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Park_Detail
-        fields = ['id', 'park_owner', 'capacity', 'created_at']
+        fields = ['id', 'park_owner_id', 'capacity', 'created_at']
 class VehicleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vehicle
