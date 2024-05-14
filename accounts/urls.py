@@ -10,6 +10,6 @@ urlpatterns = [
     path('active/<uid64>/<token>/', views.activate, name = 'activate'),
     path('logout/', views.UserLogoutView.as_view(), name='logout'),
     #added rtz 12/5
-    path('park_details/', views.ParkDetailListView.as_view(), name='park_detail_list'),
-    path('booking/', views.BookingListView.as_view(), name='booking'),
+    path('zone/', views.ZoneAPIView.as_view(), name='zone'),
+    path('bookings/', views.BookingCreateAPIView.as_view(), name='booking'),
 ]
