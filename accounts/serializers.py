@@ -1,6 +1,6 @@
 from rest_framework import serializers, status
 from django.contrib.auth.models import User
-from .models import ParkOwner, Park_Detail, Booking, Vehicle
+from .models import ParkOwner, Zone, Booking, Vehicle
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -83,16 +83,31 @@ class UserLoginSerializer(serializers.Serializer):
                 status_code=status.HTTP_400_BAD_REQUEST
             )
 
-#12-5 for parkdetail by rtz
-class ParkDetailSerializer(serializers.ModelSerializer):
+class ZoneSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Park_Detail
-        fields = ['id', 'park_owner', 'capacity', 'created_at']
+        model = Zone
+        fields = ['park_owner_id','name', 'capacity', 'created_at']
+
 class VehicleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vehicle
         fields = ['plate_number', 'mobile_no']
+
+
 class BookingSerializer(serializers.ModelSerializer):
+    vehicle = VehicleSerializer()
+    ticket_no = serializers.SerializerMethodField()
     class Meta:
         model = Booking
-        fields = ['id','vehicle','slot','time_slot']
+        fields = ['zone', 'slot', 'time_slot', 'vehicle', 'ticket_no']
+        read_only_fields = ['ticket_no']
+
+    def get_ticket_no(self, instance):
+        return instance.ticket_no()
+
+    def create(self, validated_data):
+        vehicle_data = validated_data.pop('vehicle')
+        vehicle = Vehicle.objects.create(**vehicle_data)
+        booking = Booking.objects.create(
+            vehicle=vehicle, status=True, **validated_data)
+        return booking
