@@ -10,11 +10,12 @@ Day 02: Login and Registration authentication
 
 ## API has been created successfully for Registration anad Login
 
-Register:https:/parkspottermain.pythonanywhere.com/accounts/register/ <br>
-Employee Register:/parkspottermain.pythonanywhere.com/accounts/employee-register/ <br>
-Employee Login:/parkspottermain.pythonanywhere.com/accounts/employee_login/ <br>
-Logout:/parkspottermain.pythonanywhere.com/accounts/logout/ <br>
-Zone:/parkspottermain.pythonanywhere.com/accounts/zone/ <br>
-bookings:/parkspottermain.pythonanywhere.com/accounts/bookings/ <br>
-parkowner Profile:https://parkspottermain.pythonanywhere.com/accounts/parkowner-list <br>
-Employee Profile:https://parkspottermain.pythonanywhere.com/accounts/employee-list
+Login: https://parkspottermain.pythonanywhere.com/accounts/user_login/ <br>
+Register: https://parkspottermain.pythonanywhere.com/accounts/register <br>
+Employee Register: https://parkspottermain.pythonanywhere.com/accounts/employee-register/ <br>
+Employee Login: https://parkspottermain.pythonanywhere.com/accounts/employee_login/ <br>
+Logout: https://parkspottermain.pythonanywhere.com/accounts/logout/ <br>
+Zone: https://parkspottermain.pythonanywhere.com/accounts/zone/ <br>
+bookings: https://parkspottermain.pythonanywhere.com/accounts/bookings/ <br>
+parkowner Profile: https://parkspottermain.pythonanywhere.com/accounts/parkowner-list <br>
+Employee Profile: https://parkspottermain.pythonanywhere.com/accounts/employee-list
