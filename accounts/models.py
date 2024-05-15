@@ -42,8 +42,9 @@ class ParkOwner(models.Model):
 
 class Employee(models.Model):
     park_owner_id = models.ForeignKey(
-        ParkOwner, related_name="park_owner", on_delete=models.CASCADE, blank=True, null=True)
-    name = models.CharField(max_length=50)
+        ParkOwner, related_name="employees_owner", on_delete=models.CASCADE, blank=True, null=True)
+    employee = models.OneToOneField(
+        User, related_name="employee_profile", on_delete=models.CASCADE,null=True)
     mobile_no = models.CharField(max_length=12)
     qualification = models.CharField(max_length=50, null=True, blank=True)
     nid_card_no = models.CharField(max_length=11)
