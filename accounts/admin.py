@@ -10,8 +10,18 @@ class UserProfileAdmin(admin.ModelAdmin):
     def last_name(self,obj):
         return obj.park_owner_id.last_name
     
+class EmployeeProfileAdmin(admin.ModelAdmin):
+    list_display = ['first_name','last_name','mobile_no']
+    
+    def first_name(self,obj):
+        return obj.employee.first_name
+    
+    def last_name(self,obj):
+        return obj.employee.last_name
+    
     
 admin.site.register(models.ParkOwner, UserProfileAdmin)
 admin.site.register(models.Zone)
 admin.site.register(models.Booking)
 admin.site.register(models.Vehicle)
+admin.site.register(models.Employee,EmployeeProfileAdmin)
