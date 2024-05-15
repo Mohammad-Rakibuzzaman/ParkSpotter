@@ -69,6 +69,21 @@ class Vehicle(models.Model):
     mobile_no = models.CharField(max_length=12)
 
 
+#subscription model added 16-5
+class Subscription(models.Model):
+    package = models.CharField(max_length=100)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    user = models.ForeignKey(User, related_name='subscriptions', on_delete=models.CASCADE, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.package} Subscription for {self.user}"
+
+
+
+
+
 class Booking (models.Model):
     zone = models.ForeignKey(
         Zone, on_delete=models.CASCADE, null=True, blank=True)
@@ -79,6 +94,11 @@ class Booking (models.Model):
     status = models.BooleanField(default=False)
     check_in_time = models.DateTimeField(auto_now_add=True)
     check_out_time = models.DateTimeField(blank=True, null=True)
+    #new added from subscription model
+    subscription = models.ForeignKey(Subscription, related_name='bookings', on_delete=models.CASCADE, null=True, blank=True)
+
+
+
 
     def ticket_no(self):
 
@@ -99,3 +119,10 @@ class Booking (models.Model):
 
     def __str__(self):
         return f"Booking for {self.vehicle} ({self.get_time_slot_display()})"
+    
+
+
+    
+
+
+
