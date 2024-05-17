@@ -181,6 +181,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
         fields = ['id', 'package', 'start_date', 'end_date', 'amount']
+        read_only_fields = ['end_date', 'amount']
 
     # Read-only field for amount
     amount = serializers.ReadOnlyField()

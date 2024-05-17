@@ -12,7 +12,6 @@ urlpatterns = [
     path('register/', views.UserRegistrationApiView.as_view(), name='register'),
     path('employee-register/', views.EmployeeRegistrationView.as_view(), name='employee-register'),
     path('user_login/', views.UserLoginApiView.as_view(), name='user_login'),
-    path('employee_login/', views.EmployeeLoginApiView.as_view(), name='employee_login'),
     path('active/<uid64>/<token>/', views.activate, name = 'activate'),
     path('logout/', views.UserLogoutView.as_view(), name='logout'),
     #added rtz 12/5
