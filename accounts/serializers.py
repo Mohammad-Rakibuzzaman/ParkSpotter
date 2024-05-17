@@ -1,18 +1,18 @@
 from rest_framework import serializers, status
 from django.contrib.auth.models import User
-from .models import ParkOwner, Zone, Booking, Vehicle, Employee
-from django.contrib.auth import authenticate
-from django.utils.translation import gettext_lazy as _
+from .models import ParkOwner, Zone, Booking, Vehicle, Subscription,Employee
+
 
 class ParkownerSerializer(serializers.ModelSerializer):
     class Meta:
         model = ParkOwner
         fields = '__all__'
+
+
 class EmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employee
         fields = '__all__'
-
 
 class RegistrationSerializer(serializers.ModelSerializer):
     mobile_no = serializers.CharField(write_only=True, required=True)
@@ -120,40 +120,32 @@ class EmployeeRegistrationSerializer(serializers.ModelSerializer):
                                  id=employee.id, nid_card_no=nid_card_no, address=address, qualification=qualification, joined_date=joined_date, park_owner_id= park_owner)
 
         return employee
+    
 class UserLoginSerializer(serializers.Serializer):
-    username = serializers.CharField(write_only=True)
-    password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+    username = serializers.CharField()
+    password = serializers.CharField()
 
     def validate(self, data):
         username = data.get('username')
         password = data.get('password')
 
         if username and password:
-            user = authenticate(request=self.context.get('request'), username=username, password=password)
-            if not user:
-                raise serializers.ValidationError(_('Unable to log in with provided credentials.'), code='authorization')
+            user = User.objects.filter(username=username).first()
+
+            if user and user.check_password(password):
+                return data
+            else:
+                raise serializers.ValidationError(
+                    "Incorrect username or password.",
+                    code='invalid_credentials',
+                    status_code=status.HTTP_401_UNAUTHORIZED
+                )
         else:
-            raise serializers.ValidationError(_('Must include "username" and "password".'), code='authorization')
-
-        data['user'] = user
-        return data
-class EmployeeLoginSerializer(serializers.Serializer):
-    username = serializers.CharField(write_only=True)
-    password = serializers.CharField(write_only=True, style={'input_type': 'password'})
-
-    def validate(self, data):
-        username = data.get('username')
-        password = data.get('password')
-
-        if username and password:
-            user = authenticate(request=self.context.get('request'), username=username, password=password)
-            if not user:
-                raise serializers.ValidationError(_('Unable to log in with provided credentials.'), code='authorization')
-        else:
-            raise serializers.ValidationError(_('Must include "username" and "password".'), code='authorization')
-
-        data['user'] = user
-        return data
+            raise serializers.ValidationError(
+                "Both username and password are required.",
+                code='missing_credentials',
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
 
 class ZoneSerializer(serializers.ModelSerializer):
     class Meta:
@@ -183,3 +175,17 @@ class BookingSerializer(serializers.ModelSerializer):
         booking = Booking.objects.create(
             vehicle=vehicle, status=True, **validated_data)
         return booking
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subscription
+        fields = ['id', 'package', 'start_date', 'end_date', 'amount']
+
+    # Read-only field for amount
+    amount = serializers.ReadOnlyField()
+
+    def create(self, validated_data):
+        instance = Subscription(**validated_data)
+        instance.save()
+        return instance

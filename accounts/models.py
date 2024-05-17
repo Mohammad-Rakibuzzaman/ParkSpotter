@@ -1,16 +1,63 @@
 from django.db import models
 from django.contrib.auth.models import User
 import math
-from .constants import TIME_SLOT
+from .constants import TIME_SLOT,PACKAGE
+from datetime import timedelta, date
 
 # Create your models here.
 
 PARK_PLAN = []
 
 
+class Subscription(models.Model):
+    package = models.IntegerField(choices=PACKAGE, default=1)
+    start_date = models.DateField(auto_now_add=True)
+    end_date = models.DateField()
+
+    @property
+    def amount(self):
+        if self.package == '1':
+            return 1000
+        elif self.package == '2':
+            return 5000
+        elif self.time_slot == '3':
+            return 10000
+        else:
+            return 0
+
+    def save(self, *args, **kwargs):
+        # Calculate the duration in days based on the package
+        if self.package == '1':
+            duration = timedelta(days=30)
+        elif self.package == '2':
+            duration = timedelta(days=182)  # Approximate 6 months
+        elif self.package == '3':
+            duration = timedelta(days=365)
+
+        # If the subscription is being updated and has an end_date
+        if self.pk is not None:
+            existing = Subscription.objects.get(pk=self.pk)
+            if existing.end_date > date.today():
+                remaining_days = (existing.end_date - date.today()).days
+                duration += timedelta(days=remaining_days)
+
+        # Calculate the new end_date
+        self.end_date = date.today() + duration
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"({self.get_package_display()})"
+
+    def __str__(self):
+        return f"({self.get_package_display()})"
+
+
 class ParkOwner(models.Model):
     park_owner_id = models.OneToOneField(
         User, related_name="owner", on_delete=models.CASCADE)
+    subscription_id = models.ForeignKey(
+        Subscription, related_name="subscription", on_delete=models.CASCADE)
     image = models.ImageField(
         upload_to='media/owner_images/', blank=True, null=True)
     mobile_no = models.CharField(max_length=11)
@@ -69,21 +116,6 @@ class Vehicle(models.Model):
     mobile_no = models.CharField(max_length=12)
 
 
-#subscription model added 16-5
-class Subscription(models.Model):
-    package = models.CharField(max_length=100)
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
-    start_date = models.DateField()
-    end_date = models.DateField()
-    user = models.ForeignKey(User, related_name='subscriptions', on_delete=models.CASCADE, null=True, blank=True)
-
-    def __str__(self):
-        return f"{self.package} Subscription for {self.user}"
-
-
-
-
-
 class Booking (models.Model):
     zone = models.ForeignKey(
         Zone, on_delete=models.CASCADE, null=True, blank=True)
@@ -94,10 +126,6 @@ class Booking (models.Model):
     status = models.BooleanField(default=False)
     check_in_time = models.DateTimeField(auto_now_add=True)
     check_out_time = models.DateTimeField(blank=True, null=True)
-    #new added from subscription model
-    subscription = models.ForeignKey(Subscription, related_name='bookings', on_delete=models.CASCADE, null=True, blank=True)
-
-
 
 
     def ticket_no(self):
