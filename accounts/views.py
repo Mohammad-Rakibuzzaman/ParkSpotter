@@ -36,6 +36,11 @@ class EmployeeProfileViewset(viewsets.ModelViewSet):
     queryset = Employee.objects.all()
     serializer_class = serializers.EmployeeSerializer
 
+class ParkownerProfileUpdateView(generics.RetrieveUpdateAPIView):
+    queryset = models.ParkOwner.objects.all()
+    serializer_class = serializers.ParkownerProfileSerializer
+    lookup_field = 'park_owner_id__id'
+
 class UserRegistrationApiView(APIView):
     serializer_class = serializers.RegistrationSerializer
     
