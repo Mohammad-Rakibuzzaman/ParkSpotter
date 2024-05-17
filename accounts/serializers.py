@@ -1,7 +1,18 @@
 from rest_framework import serializers, status
 from django.contrib.auth.models import User
-from .models import ParkOwner, Zone, Booking, Vehicle, Subscription
+from .models import ParkOwner, Zone, Booking, Vehicle, Subscription,Employee
 
+
+class ParkownerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ParkOwner
+        fields = '__all__'
+
+
+class EmployeeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Employee
+        fields = '__all__'
 
 class RegistrationSerializer(serializers.ModelSerializer):
     mobile_no = serializers.CharField(write_only=True, required=True)
@@ -56,7 +67,60 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
         return user
 
+class EmployeeRegistrationSerializer(serializers.ModelSerializer):
+    mobile_no = serializers.CharField(write_only=True, required=True)
+    username = serializers.CharField(write_only=True, required=True)
+    confirm_password = serializers.CharField(write_only=True, required=True)
+    password = serializers.CharField(write_only=True, required=True)
+    first_name = serializers.CharField(write_only=True, required=True)
+    last_name = serializers.CharField(write_only=True, required=True)
+    email = serializers.CharField(write_only=True, required=True)
+    joined_date = serializers.DateTimeField(write_only=True, required=True)
+    class Meta:
+        model = Employee
+        fields = ['username', 'first_name', 'last_name','qualification', 'mobile_no',
+                  'nid_card_no', 'email', 'password', 'confirm_password','address','joined_date']
+    def save(self):
+        username = self.validated_data['username']
+        first_name = self.validated_data['first_name']
+        last_name = self.validated_data['last_name']
+        qualification = self.validated_data['qualification']
+        email = self.validated_data['email']
+        password = self.validated_data['password']
+        password2 = self.validated_data['confirm_password']
+        mobile_no = self.validated_data['mobile_no']
+        nid_card_no = self.validated_data['nid_card_no']
+        address = self.validated_data['address']
+        joined_date = self.validated_data['joined_date']
+        
 
+        if password != password2:
+            raise serializers.ValidationError(
+                {'error': "Password Doesn't Matched"})
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError(
+                {'error': "Email Already exists"})
+        if Employee.objects.filter(mobile_no=mobile_no).exists():
+            raise serializers.ValidationError(
+                {'error': "This mobile number is already in use"})
+        
+        user = self.context['request'].user  # Getting the logged-in user
+        try:
+            park_owner = ParkOwner.objects.get(park_owner_id=user)
+        except ParkOwner.DoesNotExist:
+            raise serializers.ValidationError(
+                {'error': "Logged in user is not a ParkOwner"})
+
+        employee = User(username=username, email=email,
+                    first_name=first_name, last_name=last_name)
+        employee.set_password(password)
+        employee.is_active = False
+        employee.save()
+        Employee.objects.create(employee=employee, mobile_no=mobile_no,
+                                 id=employee.id, nid_card_no=nid_card_no, address=address, qualification=qualification, joined_date=joined_date, park_owner_id= park_owner)
+
+        return employee
+    
 class UserLoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField()

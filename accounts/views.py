@@ -23,10 +23,18 @@ from django.shortcuts import redirect
 from django.contrib.sites.shortcuts import get_current_site
 from rest_framework import generics
 #rtz added 12-5
-from .models import ParkOwner, Zone, Booking, Vehicle, Subscription
+from .models import ParkOwner, Zone, Booking, Vehicle, Subscription,Employee
 
 
 # Create your views here.
+class ParkownerProfileViewset(viewsets.ModelViewSet):
+    queryset = ParkOwner.objects.all()
+    serializer_class = serializers.ParkownerSerializer
+
+
+class EmployeeProfileViewset(viewsets.ModelViewSet):
+    queryset = Employee.objects.all()
+    serializer_class = serializers.EmployeeSerializer
 
 class UserRegistrationApiView(APIView):
     serializer_class = serializers.RegistrationSerializer
@@ -66,6 +74,13 @@ def activate(request, uid64, token):
         return redirect('https://development-parkspotter.netlify.app/login')
     
 
+class EmployeeRegistrationView(generics.CreateAPIView):
+    serializer_class = serializers.EmployeeRegistrationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_serializer_context(self):
+        return {'request': self.request}
+    
 class UserLoginApiView(APIView):
     def post(self, request):
         serializer = serializers.UserLoginSerializer(data=request.data)
