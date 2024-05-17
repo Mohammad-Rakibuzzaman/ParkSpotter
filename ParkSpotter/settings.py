@@ -137,6 +137,8 @@ STATIC_URL = '/static/'
 STATIC_ROOT='staticfiles'
 MEDIA_URL = '/media/'
 # 'parkspottermain.pythonanywhere.com'
+# nano accounts/migrations/0015_remove_booking_subscription_and_more.p
+# y
 # git add ParkSpotter/settings.py db.sqlite3
 # git commit - m "Committing local changes before pulling"
 # git config - -global user.email "dev.rakibuzzaman@gmail.com"
