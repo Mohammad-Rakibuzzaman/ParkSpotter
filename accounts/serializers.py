@@ -8,7 +8,29 @@ class ParkownerSerializer(serializers.ModelSerializer):
         model = ParkOwner
         fields = '__all__'
 
-
+class ParkownerDetailsSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(read_only=True)
+    class Meta:
+        model = User
+        fields = ['id','username','email', 'first_name', 'last_name']
+class ParkownerProfileSerializer(serializers.ModelSerializer):
+    park_owner_id = ParkownerDetailsSerializer()
+    class Meta:
+        model = ParkOwner
+        fields = '__all__'
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('park_owner_id', {})
+        user_serializer = self.fields['park_owner_id']
+        user_instance = instance.park_owner_id
+        user_instance = user_serializer.update(user_instance, user_data)
+        
+        instance.image = validated_data.get('image', instance.image)
+        instance.mobile_no = validated_data.get('mobile_no', instance.mobile_no)
+        instance.address = validated_data.get('address', instance.address)
+        
+        instance.save()
+        return instance
+    
 class EmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employee
