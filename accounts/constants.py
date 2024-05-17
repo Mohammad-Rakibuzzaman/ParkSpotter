@@ -4,6 +4,12 @@ TIME_SLOT=[
     ('3','5 Hours'),
 
 ]
+PACKAGE=[
+    ('1','1 Month'),
+    ('2','6 Month'),
+    ('3','12 Month'),
+
+]
 
 PARK_PLAN=[
     ('1','1'),

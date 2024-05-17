@@ -3,9 +3,9 @@ from rest_framework import viewsets
 from . import models
 from . import serializers
 #12-5 added by rtz
-from .serializers import EmployeeLoginSerializer, EmployeeRegistrationSerializer, ZoneSerializer, BookingSerializer, VehicleSerializer
+from .serializers import ZoneSerializer, BookingSerializer, VehicleSerializer, SubscriptionSerializer
 from rest_framework.permissions import IsAuthenticated
-from django.urls import reverse
+
 
 from rest_framework import status
 from rest_framework.views import APIView
@@ -23,15 +23,17 @@ from django.shortcuts import redirect
 from django.contrib.sites.shortcuts import get_current_site
 from rest_framework import generics
 #rtz added 12-5
-from .models import Employee, ParkOwner, Zone, Booking, Vehicle
+from .models import ParkOwner, Zone, Booking, Vehicle, Subscription,Employee
 
 
 # Create your views here.
 class ParkownerProfileViewset(viewsets.ModelViewSet):
-    queryset = models.ParkOwner.objects.all()
+    queryset = ParkOwner.objects.all()
     serializer_class = serializers.ParkownerSerializer
+
+
 class EmployeeProfileViewset(viewsets.ModelViewSet):
-    queryset = models.Employee.objects.all()
+    queryset = Employee.objects.all()
     serializer_class = serializers.EmployeeSerializer
 
 class UserRegistrationApiView(APIView):
@@ -71,65 +73,53 @@ def activate(request, uid64, token):
     else:
         return redirect('https://development-parkspotter.netlify.app/login')
     
+
 class EmployeeRegistrationView(generics.CreateAPIView):
-    serializer_class = EmployeeRegistrationSerializer
+    serializer_class = serializers.EmployeeRegistrationSerializer
     permission_classes = [IsAuthenticated]
 
     def get_serializer_context(self):
         return {'request': self.request}
-
+    
 class UserLoginApiView(APIView):
     def post(self, request):
         serializer = serializers.UserLoginSerializer(data=request.data)
-        
-        if serializer.is_valid():
-            user = serializer.validated_data['user']
-            
-            try:
-                park_owner = ParkOwner.objects.get(park_owner_id=user)
-            except ParkOwner.DoesNotExist:
-                return Response({"detail": "User is not a park owner."}, status=status.HTTP_403_FORBIDDEN)
-            
-            token, _ = Token.objects.get_or_create(user=user)
-            
-            login(request, user)
-            is_staff = user.is_staff
-            return Response({
-                'token': token.key,
-                'user_id': user.id,
-                'is_staff': is_staff
-            })
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-class EmployeeLoginApiView(APIView):
-    def post(self, request):
-        serializer = EmployeeLoginSerializer(data=request.data)
 
         if serializer.is_valid():
-            user = serializer.validated_data['user']
-            
-            try:
-                employee = Employee.objects.get(employee=user)
-            except Employee.DoesNotExist:
-                return Response({"detail": "User is not an employee."}, status=status.HTTP_403_FORBIDDEN)
+            username = serializer.validated_data['username']
+            password = serializer.validated_data['password']
 
-            token, _ = Token.objects.get_or_create(user=user)
-            login(request, user)
-            return Response({
-                'token': token.key,
-                'user_id': user.id,
-                'username': user.username,
-            })
+            user = authenticate(username=username, password=password)
+
+            if user is not None:
+                try:
+                    park_owner = ParkOwner.objects.get(park_owner_id =user)
+                except ParkOwner.DoesNotExist:
+                    return Response(
+                        {"detail": "User is not a park owner."},                        status=status.HTTP_403_FORBIDDEN
+                    )
+                token, _ = Token.objects.get_or_create(user=user)
+
+                login(request, user)
+                is_staff = user.is_staff
+                return Response({
+                    'token': token.key,
+                    'user_id': user.id,
+                    'is_staff': is_staff
+                })
+
+            else:
+                
+                return Response({'error': "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
 class UserLogoutView(APIView):
-    permission_classes = [IsAuthenticated]
     def get(self, request):
         request.user.auth_token.delete()
         logout(request)
-        return redirect('/')
+        return redirect('login')
     
 #12.5 rtzaddedd
 class ZoneAPIView(APIView):
@@ -145,3 +135,8 @@ class BookingCreateAPIView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SubscriptionListCreateView(generics.ListCreateAPIView):
+    queryset = Subscription.objects.all()
+    serializer_class = SubscriptionSerializer

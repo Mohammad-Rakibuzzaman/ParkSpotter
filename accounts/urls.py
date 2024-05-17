@@ -7,6 +7,8 @@ router.register('parkowner-list', views.ParkownerProfileViewset)
 router.register('employee-list', views.EmployeeProfileViewset)
 urlpatterns = [
     path('', include(router.urls)),
+    path('subscription/', views.SubscriptionListCreateView.as_view(),
+         name='subscription'),
     path('register/', views.UserRegistrationApiView.as_view(), name='register'),
     path('employee-register/', views.EmployeeRegistrationView.as_view(), name='employee-register'),
     path('user_login/', views.UserLoginApiView.as_view(), name='user_login'),
