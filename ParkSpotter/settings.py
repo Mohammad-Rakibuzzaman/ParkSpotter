@@ -137,6 +137,10 @@ STATIC_URL = '/static/'
 STATIC_ROOT='staticfiles'
 MEDIA_URL = '/media/'
 # 'parkspottermain.pythonanywhere.com'
+# cd accounts/migrations
+# rm -f *.py
+# python manage.py makemigrations accounts
+# python manage.py migrate
 # nano accounts/migrations/0015_remove_booking_subscription_and_more.p
 # y
 # git add ParkSpotter/settings.py db.sqlite3
