@@ -1,6 +1,6 @@
 from rest_framework import serializers, status
 from django.contrib.auth.models import User
-from .models import ParkOwner, Zone, Booking, Vehicle, Subscription,Employee
+from .models import ParkOwner, Zone, Booking, Vehicle, Subscription, Employee, Slot
 
 
 class ParkownerSerializer(serializers.ModelSerializer):
@@ -169,10 +169,11 @@ class UserLoginSerializer(serializers.Serializer):
                 status_code=status.HTTP_400_BAD_REQUEST
             )
 
+
 class ZoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = Zone
-        fields = ['park_owner_id','name', 'capacity', 'created_at']
+        fields = ['park_owner', 'name', 'capacity', 'created_at']
 
 class VehicleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -180,24 +181,48 @@ class VehicleSerializer(serializers.ModelSerializer):
         fields = ['plate_number', 'mobile_no']
 
 
+class SlotSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Slot
+        fields = ['id', 'slot_number','zone']
+
+
 class BookingSerializer(serializers.ModelSerializer):
     vehicle = VehicleSerializer()
     ticket_no = serializers.SerializerMethodField()
+    amount = serializers.ReadOnlyField()
+
     class Meta:
         model = Booking
-        fields = ['zone', 'slot', 'time_slot', 'vehicle', 'ticket_no']
-        read_only_fields = ['ticket_no']
+        fields = ['zone', 'slot', 'time_slot', 'vehicle', 'ticket_no',
+                  'amount', 'fine', 'check_in_time', 'check_out_time']
+        read_only_fields = ['ticket_no', 'slot']
 
-    def get_ticket_no(self, instance):
-        return instance.ticket_no()
+    def get_ticket_no(self, obj):
+        return obj.ticket_no()
 
     def create(self, validated_data):
         vehicle_data = validated_data.pop('vehicle')
         vehicle = Vehicle.objects.create(**vehicle_data)
-        booking = Booking.objects.create(
-            vehicle=vehicle, status=True, **validated_data)
+
+        # Create the booking instance
+        booking = Booking(vehicle=vehicle, **validated_data, status=True)
+
+        # Assign the slot before saving
+        booking.slot = booking.find_next_available_slot()
+        if booking.slot is None:
+            raise serializers.ValidationError(
+                "No available slots in the selected zone.")
+
+        booking.save()
         return booking
 
+    def validate(self, data):
+        # Check if the selected slot is already booked
+        slot = data.get('slot')
+        if slot and Booking.objects.filter(slot=slot, status=True).exists():
+            raise serializers.ValidationError("This slot is already booked.")
+        return data
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:

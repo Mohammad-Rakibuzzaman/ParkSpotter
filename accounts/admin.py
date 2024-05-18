@@ -18,11 +18,15 @@ class EmployeeProfileAdmin(admin.ModelAdmin):
     
     def last_name(self,obj):
         return obj.employee.last_name
-    
+
+
+class ZoneAdmin(admin.ModelAdmin):
+    list_display = ('name', 'capacity', 'created_at')
     
 admin.site.register(models.ParkOwner, UserProfileAdmin)
-admin.site.register(models.Zone)
+admin.site.register(models.Zone,ZoneAdmin)
 admin.site.register(models.Booking)
 admin.site.register(models.Vehicle)
 admin.site.register(models.Employee,EmployeeProfileAdmin)
 admin.site.register(models.Subscription)
+admin.site.register(models.Slot)

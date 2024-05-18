@@ -1,7 +1,7 @@
 TIME_SLOT=[
-    ('1','1 Hours'),
-    ('2','3 Hours'),
-    ('3','5 Hours'),
+    (1,'1 Hours'),
+    (2,'3 Hours'),
+    (3,'5 Hours'),
 
 ]
 PACKAGE=[
