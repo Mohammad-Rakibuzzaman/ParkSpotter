@@ -52,7 +52,7 @@ class ParkOwner(models.Model):
     park_owner_id = models.OneToOneField(
         User, related_name="owner", on_delete=models.CASCADE)
     subscription_id = models.ForeignKey(
-        Subscription, related_name="subscription", on_delete=models.CASCADE)
+        Subscription, related_name="subscription", on_delete=models.CASCADE, null=True)
     image = models.ImageField(
         upload_to='media/owner_images/', blank=True, null=True)
     mobile_no = models.CharField(max_length=11)
