@@ -137,6 +137,9 @@ STATIC_URL = '/static/'
 STATIC_ROOT='staticfiles'
 MEDIA_URL = '/media/'
 # 'parkspottermain.pythonanywhere.com'
+# Delete database 
+# rm -rf db.sqlite3
+# python manage.py migrate
 # cd accounts/migrations
 # rm -f *.py
 # python manage.py makemigrations accounts
