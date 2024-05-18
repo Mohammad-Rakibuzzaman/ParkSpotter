@@ -130,10 +130,12 @@ class UserLogoutView(APIView):
 class ZoneAPIView(APIView):
     queryset = Zone.objects.all()
     serializer_class = ZoneSerializer
+
     # permission_classes = [IsAuthenticated]
     
 
 class BookingCreateAPIView(APIView):
+    
     def post(self, request, format=None):
         serializer = BookingSerializer(data=request.data)
         if serializer.is_valid():
