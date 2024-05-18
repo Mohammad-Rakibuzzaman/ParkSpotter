@@ -13,6 +13,7 @@ urlpatterns = [
     path('employee-register/', views.EmployeeRegistrationView.as_view(), name='employee-register'),
     path('user_login/', views.UserLoginApiView.as_view(), name='user_login'),
     path('active/<uid64>/<token>/', views.activate, name = 'activate'),
+    path('profile/<int:park_owner_id__id>/', views.ParkownerProfileUpdateView.as_view(), name='parkowner-profile-update'),
     path('logout/', views.UserLogoutView.as_view(), name='logout'),
     #added rtz 12/5
     path('zone/', views.ZoneAPIView.as_view(), name='zone'),
