@@ -86,6 +86,11 @@ class EmployeeRegistrationView(generics.CreateAPIView):
     def get_serializer_context(self):
         return {'request': self.request}
     
+    def perform_create(self, serializer):
+        employee = serializer.save()
+        employee.is_active = True  
+        employee.save()
+    
 class UserLoginApiView(APIView):
     def post(self, request):
         serializer = serializers.UserLoginSerializer(data=request.data)

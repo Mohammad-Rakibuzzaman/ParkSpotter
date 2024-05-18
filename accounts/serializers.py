@@ -50,6 +50,9 @@ class EmployeeRegistrationSerializer(serializers.ModelSerializer):
         model = Employee
         fields = ['username', 'first_name', 'last_name','qualification', 'mobile_no',
                   'nid_card_no', 'email', 'password', 'confirm_password','address','joined_date']
+        extra_kwargs = {
+            'is_active': {'read_only': True},  
+        }
     def save(self):
         username = self.validated_data['username']
         first_name = self.validated_data['first_name']
