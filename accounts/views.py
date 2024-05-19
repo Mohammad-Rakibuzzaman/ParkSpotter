@@ -132,21 +132,16 @@ class UserLogoutView(APIView):
         return redirect('login')
     
 #12.5 rtzaddedd
-class ZoneAPIView(APIView):
+class ZoneAPIView(viewsets.ModelViewSet):
     queryset = Zone.objects.all()
     serializer_class = ZoneSerializer
 
     # permission_classes = [IsAuthenticated]
     
 
-class BookingCreateAPIView(APIView):
-    
-    def post(self, request, format=None):
-        serializer = BookingSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class BookingCreateAPIView(viewsets.ModelViewSet):
+    queryset = Booking.objects.all()
+    serializer_class = BookingSerializer
 
 
 class SubscriptionListCreateView(generics.ListCreateAPIView):
