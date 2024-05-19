@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 import math
 from .constants import TIME_SLOT,PACKAGE
 from datetime import timedelta, date
+from django.db.models import Sum
 
 # Create your models here.
 
@@ -13,23 +14,24 @@ class Subscription(models.Model):
 
     @property
     def amount(self):
-        if self.package == '1':
+        if self.package == 1:
             return 1000
-        elif self.package == '2':
+        elif self.package == 2:
             return 5000
-        elif self.time_slot == '3':
+        elif self.package == 3:
             return 10000
         else:
             return 0
 
     def save(self, *args, **kwargs):
-        
-        if self.package == '1':
+        if self.package == 1:
             duration = timedelta(days=30)
-        elif self.package == '2':
-            duration = timedelta(days=182)  
-        elif self.package == '3':
+        elif self.package == 2:
+            duration = timedelta(days=182)
+        elif self.package == 3:
             duration = timedelta(days=365)
+        else:
+            raise ValueError("Invalid package type")
 
         if self.pk is not None:
             existing = Subscription.objects.get(pk=self.pk)
@@ -40,9 +42,6 @@ class Subscription(models.Model):
         self.end_date = date.today() + duration
 
         super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"({self.get_package_display()})"
 
     def __str__(self):
         return f"({self.get_package_display()})"
@@ -59,7 +58,7 @@ class ParkOwner(models.Model):
     email = models.EmailField()
     nid_card_no = models.CharField(max_length=11)
     slot_size = models.CharField(max_length=200)
-    capacity = models.CharField(max_length=200)
+    capacity = models.CharField(max_length=200,default=0)
     address = models.CharField(max_length=200, blank=True, null=True)
     area = models.CharField(max_length=200)
     payment_method = models.CharField(max_length=200, null=True, blank=True)
@@ -68,8 +67,12 @@ class ParkOwner(models.Model):
     payment_date = models.DateField(auto_now_add=True, null=True, blank=True)
     joined_date = models.DateTimeField(
         auto_now_add=True, null=True, blank=True)
-
     
+    def update_capacity(self):
+        total_capacity = self.park_zones.aggregate(
+            total=Sum('capacity'))['total'] or 0
+        self.capacity = total_capacity
+        self.save(update_fields=['capacity'])
 
     def __str__(self):
         return self.park_owner_id.username
@@ -102,8 +105,13 @@ class Zone(models.Model):
         super().save(*args, **kwargs)
         # Ensure slots are created
         for slot_number in range(1, self.capacity + 1):
-            Slot.objects.get_or_create(
-                zone=self, slot_number=slot_number)
+            Slot.objects.get_or_create(zone=self, slot_number=slot_number)
+        self.park_owner.update_capacity()
+
+    def delete(self, *args, **kwargs):
+        park_owner = self.park_owner
+        super().delete(*args, **kwargs)
+        park_owner.update_capacity()
 
     def __str__(self):
         return f"Zone {self.name}"

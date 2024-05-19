@@ -67,7 +67,14 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
 ]
 
-
+REST_FRAMEWORK = {
+   'DEFAULT_AUTHENTICATION_CLASSES': (
+       'rest_framework.authentication.TokenAuthentication',
+   ),
+   'DEFAULT_PERMISSION_CLASSES': (
+       'rest_framework.permissions.AllowAny',
+   ),
+}
 
 ROOT_URLCONF = 'ParkSpotter.urls'
 
@@ -139,6 +146,9 @@ STATIC_URL = '/static/'
 STATIC_ROOT='staticfiles'
 MEDIA_URL = '/media/'
 # 'parkspottermain.pythonanywhere.com'
+# Delete database 
+# rm -rf db.sqlite3
+# python manage.py migrate
 # cd accounts/migrations
 # rm -f *.py
 # python manage.py makemigrations accounts
