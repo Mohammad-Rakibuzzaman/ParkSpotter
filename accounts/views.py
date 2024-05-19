@@ -153,6 +153,6 @@ class BookingCreateAPIView(viewsets.ModelViewSet):
     serializer_class = BookingSerializer
 
 
-class SubscriptionListCreateView(generics.ListCreateAPIView):
+class SubscriptionListCreateView(viewsets.ModelViewSet):
     queryset = Subscription.objects.all()
     serializer_class = SubscriptionSerializer
