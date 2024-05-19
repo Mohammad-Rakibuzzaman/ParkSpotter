@@ -239,6 +239,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
     # Read-only field for amount
     amount = serializers.ReadOnlyField()
+    end_date = serializers.ReadOnlyField()
 
     def create(self, validated_data):
         instance = Subscription(**validated_data)
