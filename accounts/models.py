@@ -67,6 +67,10 @@ class ParkOwner(models.Model):
     payment_date = models.DateField(auto_now_add=True, null=True, blank=True)
     joined_date = models.DateTimeField(
         auto_now_add=True, null=True, blank=True)
+    latitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True)
     
     def update_capacity(self):
         total_capacity = self.park_zones.aggregate(
