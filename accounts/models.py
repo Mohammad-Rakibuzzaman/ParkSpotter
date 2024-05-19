@@ -13,23 +13,24 @@ class Subscription(models.Model):
 
     @property
     def amount(self):
-        if self.package == '1':
+        if self.package == 1:
             return 1000
-        elif self.package == '2':
+        elif self.package == 2:
             return 5000
-        elif self.time_slot == '3':
+        elif self.package == 3:
             return 10000
         else:
             return 0
 
     def save(self, *args, **kwargs):
-        
-        if self.package == '1':
+        if self.package == 1:
             duration = timedelta(days=30)
-        elif self.package == '2':
-            duration = timedelta(days=182)  
-        elif self.package == '3':
+        elif self.package == 2:
+            duration = timedelta(days=182)
+        elif self.package == 3:
             duration = timedelta(days=365)
+        else:
+            raise ValueError("Invalid package type")
 
         if self.pk is not None:
             existing = Subscription.objects.get(pk=self.pk)
@@ -40,9 +41,6 @@ class Subscription(models.Model):
         self.end_date = date.today() + duration
 
         super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"({self.get_package_display()})"
 
     def __str__(self):
         return f"({self.get_package_display()})"

@@ -91,6 +91,7 @@ class EmployeeRegistrationView(generics.CreateAPIView):
         employee.is_active = True  
         employee.save()
     
+
 class UserLoginApiView(APIView):
     def post(self, request):
         serializer = serializers.UserLoginSerializer(data=request.data)
@@ -102,25 +103,33 @@ class UserLoginApiView(APIView):
             user = authenticate(username=username, password=password)
 
             if user is not None:
-                try:
-                    park_owner = ParkOwner.objects.get(park_owner_id =user)
-                except ParkOwner.DoesNotExist:
-                    return Response(
-                        {"detail": "User is not a park owner."},                        status=status.HTTP_403_FORBIDDEN
-                    )
+                login(request, user)
                 token, _ = Token.objects.get_or_create(user=user)
 
-                login(request, user)
-                is_staff = user.is_staff
-                return Response({
-                    'token': token.key,
-                    'user_id': user.id,
-                    'is_staff': is_staff
-                })
-
-            else:
                 
-                return Response({'error': "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
+                is_park_owner = ParkOwner.objects.filter(
+                    park_owner_id=user).exists()
+                is_employee = Employee.objects.filter(employee=user).exists()
+
+                if is_park_owner:
+                    return Response({
+                        'token': token.key,
+                        'user_id': user.id,
+                        'role': 'park_owner'
+                    })
+                elif is_employee:
+                    return Response({
+                        'token': token.key,
+                        'user_id': user.id,
+                        'role': 'employee'
+                    })
+                else:
+                    return Response(
+                        {"detail": "User is neither a park owner nor an employee."},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+
+            return Response({'error': "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -132,21 +141,16 @@ class UserLogoutView(APIView):
         return redirect('login')
     
 #12.5 rtzaddedd
-class ZoneAPIView(APIView):
+class ZoneAPIView(viewsets.ModelViewSet):
     queryset = Zone.objects.all()
     serializer_class = ZoneSerializer
 
     # permission_classes = [IsAuthenticated]
     
 
-class BookingCreateAPIView(APIView):
-    
-    def post(self, request, format=None):
-        serializer = BookingSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class BookingCreateAPIView(viewsets.ModelViewSet):
+    queryset = Booking.objects.all()
+    serializer_class = BookingSerializer
 
 
 class SubscriptionListCreateView(generics.ListCreateAPIView):

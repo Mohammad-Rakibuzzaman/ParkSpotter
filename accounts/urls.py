@@ -5,6 +5,8 @@ router = DefaultRouter()
 
 router.register('parkowner-list', views.ParkownerProfileViewset)
 router.register('employee-list', views.EmployeeProfileViewset)
+router.register('zone', views.ZoneAPIView, basename='zone')
+router.register('bookings', views.BookingCreateAPIView, basename='booking')
 urlpatterns = [
     path('', include(router.urls)),
     path('subscription/', views.SubscriptionListCreateView.as_view(),
@@ -16,6 +18,6 @@ urlpatterns = [
     path('profile/<int:park_owner_id__id>/', views.ParkownerProfileUpdateView.as_view(), name='parkowner-profile-update'),
     path('logout/', views.UserLogoutView.as_view(), name='logout'),
     #added rtz 12/5
-    path('zone/', views.ZoneAPIView.as_view(), name='zone'),
-    path('bookings/', views.BookingCreateAPIView.as_view(), name='booking'),
+    # path('zone/', views.ZoneAPIView.as_view(), name='zone'),
+    # path('bookings/', views.BookingCreateAPIView.as_view(), name='booking'),
 ]
