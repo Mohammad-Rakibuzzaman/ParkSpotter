@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 import math
 from .constants import TIME_SLOT,PACKAGE
 from datetime import timedelta, date
+from django.db.models import Sum
 
 # Create your models here.
 
@@ -57,7 +58,7 @@ class ParkOwner(models.Model):
     email = models.EmailField()
     nid_card_no = models.CharField(max_length=11)
     slot_size = models.CharField(max_length=200)
-    capacity = models.CharField(max_length=200)
+    capacity = models.CharField(max_length=200,default=0)
     address = models.CharField(max_length=200, blank=True, null=True)
     area = models.CharField(max_length=200)
     payment_method = models.CharField(max_length=200, null=True, blank=True)
@@ -66,8 +67,12 @@ class ParkOwner(models.Model):
     payment_date = models.DateField(auto_now_add=True, null=True, blank=True)
     joined_date = models.DateTimeField(
         auto_now_add=True, null=True, blank=True)
-
     
+    def update_capacity(self):
+        total_capacity = self.park_zones.aggregate(
+            total=Sum('capacity'))['total'] or 0
+        self.capacity = total_capacity
+        self.save(update_fields=['capacity'])
 
     def __str__(self):
         return self.park_owner_id.username
@@ -100,8 +105,13 @@ class Zone(models.Model):
         super().save(*args, **kwargs)
         # Ensure slots are created
         for slot_number in range(1, self.capacity + 1):
-            Slot.objects.get_or_create(
-                zone=self, slot_number=slot_number)
+            Slot.objects.get_or_create(zone=self, slot_number=slot_number)
+        self.park_owner.update_capacity()
+
+    def delete(self, *args, **kwargs):
+        park_owner = self.park_owner
+        super().delete(*args, **kwargs)
+        park_owner.update_capacity()
 
     def __str__(self):
         return f"Zone {self.name}"
