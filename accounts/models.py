@@ -55,7 +55,6 @@ class ParkOwner(models.Model):
     image = models.ImageField(
         upload_to='media/owner_images/', blank=True, null=True)
     mobile_no = models.CharField(max_length=11)
-    email = models.EmailField()
     nid_card_no = models.CharField(max_length=11)
     slot_size = models.CharField(max_length=200)
     capacity = models.CharField(max_length=200,default=0)
@@ -125,6 +124,7 @@ class Slot(models.Model):
     zone = models.ForeignKey(
         Zone, related_name='slots', on_delete=models.CASCADE,null=True)
     slot_number = models.PositiveIntegerField()
+    available = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Slot {self.slot_number} for {self.zone}"
@@ -158,18 +158,41 @@ class Booking (models.Model):
         booked_slots = list(booked_slots)
 
         available_slots = Slot.objects.filter(
-            zone=self.zone).exclude(id__in=booked_slots)
+            zone=self.zone, available=False).exclude(id__in=booked_slots)
         if available_slots.exists():
             return available_slots.first()
         return None
 
     def save(self, *args, **kwargs):
+        # If it's an update, handle the old slot availability
+        if self.pk:
+            old_booking = Booking.objects.get(pk=self.pk)
+            if old_booking.slot and old_booking.slot != self.slot:
+                old_booking.slot.available = False
+                old_booking.slot.save()
+
+        # Assign the slot if not already assigned
         if self.slot is None:
             self.slot = self.find_next_available_slot()
-        else:
-            if Booking.objects.filter(slot=self.slot, status=True).exists():
-                raise ValueError("This slot is already booked.")
+            if self.slot is None:
+                raise ValueError("No available slots in the selected zone.")
+
+        # Check if the selected slot is already booked
+        if Booking.objects.filter(slot=self.slot, status=True).exists():
+            raise ValueError("This slot is already booked.")
+
+        # Mark the slot as available
+        self.slot.available = True
+        self.slot.save()
+
         super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        # Mark the slot as unavailable when the booking is deleted
+        if self.slot:
+            self.slot.available = False
+            self.slot.save()
+        super().delete(*args, **kwargs)
 
     def ticket_no(self):
         zone_name = self.zone.name
