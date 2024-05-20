@@ -191,7 +191,7 @@ class VehicleSerializer(serializers.ModelSerializer):
 class SlotSerializer(serializers.ModelSerializer):
     class Meta:
         model = Slot
-        fields = ['id', 'slot_number', 'zone']
+        fields = ['id', 'slot_number', 'zone', 'available']
 
 
 class BookingSerializer(serializers.ModelSerializer):
