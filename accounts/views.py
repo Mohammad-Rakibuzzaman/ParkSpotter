@@ -160,3 +160,10 @@ class BookingCreateAPIView(viewsets.ModelViewSet):
 class SubscriptionViewSet(viewsets.ModelViewSet):
     queryset = Subscription.objects.all()
     serializer_class = SubscriptionSerializer
+
+
+def nearby_parking_lots(request):
+    park_owners = ParkOwner.objects.all()
+    return render(request, 'nearby_parking_lots.html', {
+        'park_owners': park_owners,
+    })
