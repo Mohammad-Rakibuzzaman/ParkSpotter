@@ -6,6 +6,7 @@ router = DefaultRouter()
 router.register('parkowner-list', views.ParkownerProfileViewset)
 router.register('employee-list', views.EmployeeProfileViewset)
 router.register('zone', views.ZoneAPIView, basename='zone')
+router.register('slot', views.SlotAPIView, basename='slot')
 router.register('bookings', views.BookingCreateAPIView, basename='booking')
 router.register(
     'subscription', views.SubscriptionViewSet, basename='subscription')
