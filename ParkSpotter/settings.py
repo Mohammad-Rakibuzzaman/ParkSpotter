@@ -28,7 +28,8 @@ SECRET_KEY = 'django-insecure-afgt$dx*kg4_a9hi6(0i-jmrc9rv@6dx$20=h4ad-%ox+xd!7v
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
-
+CSRF_TRUSTED_ORIGINS = [
+    'https://parkspotter-backened.onrender.com', 'https://*.127.0.0.1']
 
 # Application definition
 
@@ -51,7 +52,7 @@ CSRF_COOKIE_NAME = 'csrftoken'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080",
     'http://127.0.0.1:5500',
-    'https://parkspottermain.pythonanywhere.com',
+    'https://parkspotter-backened.onrender.com',
     'https://development-parkspotter.netlify.app',
 ]
 

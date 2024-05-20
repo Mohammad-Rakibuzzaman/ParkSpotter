@@ -3,7 +3,7 @@ from rest_framework import viewsets
 from . import models
 from . import serializers
 #12-5 added by rtz
-from .serializers import ZoneSerializer, BookingSerializer, VehicleSerializer, SubscriptionSerializer
+from .serializers import SlotSerializer, ZoneSerializer, BookingSerializer, VehicleSerializer, SubscriptionSerializer
 from rest_framework.permissions import IsAuthenticated
 
 
@@ -23,7 +23,7 @@ from django.shortcuts import redirect
 from django.contrib.sites.shortcuts import get_current_site
 from rest_framework import generics
 #rtz added 12-5
-from .models import ParkOwner, Zone, Booking, Vehicle, Subscription,Employee
+from .models import ParkOwner, Slot, Zone, Booking, Vehicle, Subscription,Employee
 
 
 # Create your views here.
@@ -146,6 +146,10 @@ class ZoneAPIView(viewsets.ModelViewSet):
     serializer_class = ZoneSerializer
 
     # permission_classes = [IsAuthenticated]
+
+class SlotAPIView(viewsets.ModelViewSet):
+    queryset = Slot.objects.all()
+    serializer_class = SlotSerializer
     
 
 class BookingCreateAPIView(viewsets.ModelViewSet):
@@ -156,3 +160,10 @@ class BookingCreateAPIView(viewsets.ModelViewSet):
 class SubscriptionViewSet(viewsets.ModelViewSet):
     queryset = Subscription.objects.all()
     serializer_class = SubscriptionSerializer
+
+
+def nearby_parking_lots(request):
+    park_owners = ParkOwner.objects.all()
+    return render(request, 'nearby_parking_lots.html', {
+        'park_owners': park_owners,
+    })
