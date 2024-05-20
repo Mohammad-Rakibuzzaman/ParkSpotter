@@ -55,7 +55,6 @@ class ParkOwner(models.Model):
     image = models.ImageField(
         upload_to='media/owner_images/', blank=True, null=True)
     mobile_no = models.CharField(max_length=11)
-    email = models.EmailField()
     nid_card_no = models.CharField(max_length=11)
     slot_size = models.CharField(max_length=200)
     capacity = models.CharField(max_length=200,default=0)
