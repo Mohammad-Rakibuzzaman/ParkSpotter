@@ -98,6 +98,7 @@ class EmployeeRegistrationSerializer(serializers.ModelSerializer):
 class RegistrationSerializer(serializers.ModelSerializer):
     mobile_no = serializers.CharField(write_only=True, required=True)
     username = serializers.CharField(write_only=True, required=True)
+    email = serializers.EmailField(write_only=True, required=True)
     confirm_password = serializers.CharField(write_only=True, required=True)
     password = serializers.CharField(write_only=True, required=True)
     first_name = serializers.CharField(write_only=True, required=True)
