@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 import math
 from .constants import TIME_SLOT,PACKAGE
 from datetime import timedelta, date
+from django.db.models import Sum
 
 # Create your models here.
 
@@ -13,23 +14,24 @@ class Subscription(models.Model):
 
     @property
     def amount(self):
-        if self.package == '1':
+        if self.package == 1:
             return 1000
-        elif self.package == '2':
+        elif self.package == 2:
             return 5000
-        elif self.time_slot == '3':
+        elif self.package == 3:
             return 10000
         else:
             return 0
 
     def save(self, *args, **kwargs):
-        
-        if self.package == '1':
+        if self.package == 1:
             duration = timedelta(days=30)
-        elif self.package == '2':
-            duration = timedelta(days=182)  
-        elif self.package == '3':
+        elif self.package == 2:
+            duration = timedelta(days=182)
+        elif self.package == 3:
             duration = timedelta(days=365)
+        else:
+            raise ValueError("Invalid package type")
 
         if self.pk is not None:
             existing = Subscription.objects.get(pk=self.pk)
@@ -44,9 +46,6 @@ class Subscription(models.Model):
     def __str__(self):
         return f"({self.get_package_display()})"
 
-    def __str__(self):
-        return f"({self.get_package_display()})"
-
 
 class ParkOwner(models.Model):
     park_owner_id = models.OneToOneField(
@@ -56,10 +55,9 @@ class ParkOwner(models.Model):
     image = models.ImageField(
         upload_to='media/owner_images/', blank=True, null=True)
     mobile_no = models.CharField(max_length=11)
-    email = models.EmailField()
     nid_card_no = models.CharField(max_length=11)
     slot_size = models.CharField(max_length=200)
-    capacity = models.CharField(max_length=200)
+    capacity = models.CharField(max_length=200,default=0)
     address = models.CharField(max_length=200, blank=True, null=True)
     area = models.CharField(max_length=200)
     payment_method = models.CharField(max_length=200, null=True, blank=True)
@@ -68,8 +66,16 @@ class ParkOwner(models.Model):
     payment_date = models.DateField(auto_now_add=True, null=True, blank=True)
     joined_date = models.DateTimeField(
         auto_now_add=True, null=True, blank=True)
-
+    latitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True)
     
+    def update_capacity(self):
+        total_capacity = self.park_zones.aggregate(
+            total=Sum('capacity'))['total'] or 0
+        self.capacity = total_capacity
+        self.save(update_fields=['capacity'])
 
     def __str__(self):
         return self.park_owner_id.username
@@ -102,8 +108,13 @@ class Zone(models.Model):
         super().save(*args, **kwargs)
         # Ensure slots are created
         for slot_number in range(1, self.capacity + 1):
-            Slot.objects.get_or_create(
-                zone=self, slot_number=slot_number)
+            Slot.objects.get_or_create(zone=self, slot_number=slot_number)
+        self.park_owner.update_capacity()
+
+    def delete(self, *args, **kwargs):
+        park_owner = self.park_owner
+        super().delete(*args, **kwargs)
+        park_owner.update_capacity()
 
     def __str__(self):
         return f"Zone {self.name}"
@@ -113,6 +124,7 @@ class Slot(models.Model):
     zone = models.ForeignKey(
         Zone, related_name='slots', on_delete=models.CASCADE,null=True)
     slot_number = models.PositiveIntegerField()
+    available = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Slot {self.slot_number} for {self.zone}"
@@ -146,18 +158,41 @@ class Booking (models.Model):
         booked_slots = list(booked_slots)
 
         available_slots = Slot.objects.filter(
-            zone=self.zone).exclude(id__in=booked_slots)
+            zone=self.zone, available=False).exclude(id__in=booked_slots)
         if available_slots.exists():
             return available_slots.first()
         return None
 
     def save(self, *args, **kwargs):
+        # If it's an update, handle the old slot availability
+        if self.pk:
+            old_booking = Booking.objects.get(pk=self.pk)
+            if old_booking.slot and old_booking.slot != self.slot:
+                old_booking.slot.available = False
+                old_booking.slot.save()
+
+        # Assign the slot if not already assigned
         if self.slot is None:
             self.slot = self.find_next_available_slot()
-        else:
-            if Booking.objects.filter(slot=self.slot, status=True).exists():
-                raise ValueError("This slot is already booked.")
+            if self.slot is None:
+                raise ValueError("No available slots in the selected zone.")
+
+        # Check if the selected slot is already booked
+        if Booking.objects.filter(slot=self.slot, status=True).exists():
+            raise ValueError("This slot is already booked.")
+
+        # Mark the slot as available
+        self.slot.available = True
+        self.slot.save()
+
         super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        # Mark the slot as unavailable when the booking is deleted
+        if self.slot:
+            self.slot.available = False
+            self.slot.save()
+        super().delete(*args, **kwargs)
 
     def ticket_no(self):
         zone_name = self.zone.name

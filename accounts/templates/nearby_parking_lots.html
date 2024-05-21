@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nearby Parking Lots</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Nearby Parking Lots</h1>
+    <div id="map"></div>
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            var defaultLocation = [37.7749, -122.4194]; // Default location (San Francisco)
+
+            var map = L.map('map').setView(defaultLocation, 13);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            var userMarker = L.marker(defaultLocation).addTo(map)
+                .bindPopup('You are here')
+                .openPopup();
+
+            var parkingLots = [
+                {% for owner in park_owners %}
+                {
+                    lat: {{ owner.latitude }},
+                    lng: {{ owner.longitude }},
+                    name: "{{ owner.park_owner_id.username }}"
+                },
+                {% endfor %}
+            ];
+
+            parkingLots.forEach(function(parkingLot) {
+                var marker = L.marker([parkingLot.lat, parkingLot.lng]).addTo(map)
+                    .bindPopup(`<b>${parkingLot.name}</b><br><button onclick="showRoute([${parkingLot.lat}, ${parkingLot.lng}])">Get Directions</button>`);
+            });
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var userLocation = [position.coords.latitude, position.coords.longitude];
+                    map.setView(userLocation, 13);
+                    userMarker.setLatLng(userLocation).bindPopup('You are here').openPopup();
+                });
+            }
+
+            var routingControl;
+
+            window.showRoute = function(destination) {
+                if (routingControl) {
+                    map.removeControl(routingControl);
+                }
+
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var userLocation = [position.coords.latitude, position.coords.longitude];
+
+                    routingControl = L.Routing.control({
+                        waypoints: [
+                            L.latLng(userLocation),
+                            L.latLng(destination)
+                        ],
+                        routeWhileDragging: true,
+                        geocoder: L.Control.Geocoder.nominatim(),
+                        router: L.Routing.mapbox(`https://api.mapbox.com/directions/v5/mapbox/driving/90.416840,23.781663;90.415160,23.795112`) // Replace 'your-mapbox-api-key-here' with your actual Mapbox API key
+                    }).addTo(map);
+                });
+            } 
+        });
+    </script>
+</body>
+</html>

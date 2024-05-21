@@ -28,7 +28,8 @@ SECRET_KEY = 'django-insecure-afgt$dx*kg4_a9hi6(0i-jmrc9rv@6dx$20=h4ad-%ox+xd!7v
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
-
+CSRF_TRUSTED_ORIGINS = [
+    'https://parkspotter-backened.onrender.com', 'https://*.127.0.0.1']
 
 # Application definition
 
@@ -51,7 +52,7 @@ CSRF_COOKIE_NAME = 'csrftoken'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080",
     'http://127.0.0.1:5500',
-    'https://parkspottermain.pythonanywhere.com',
+    'https://parkspotter-backened.onrender.com',
     'https://development-parkspotter.netlify.app',
 ]
 
@@ -72,7 +73,7 @@ REST_FRAMEWORK = {
        'rest_framework.authentication.TokenAuthentication',
    ),
    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
+       'rest_framework.permissions.AllowAny',
    ),
 }
 
@@ -146,6 +147,9 @@ STATIC_URL = '/static/'
 STATIC_ROOT='staticfiles'
 MEDIA_URL = '/media/'
 # 'parkspottermain.pythonanywhere.com'
+# Delete database 
+# rm -rf db.sqlite3
+# python manage.py migrate
 # cd accounts/migrations
 # rm -f *.py
 # python manage.py makemigrations accounts

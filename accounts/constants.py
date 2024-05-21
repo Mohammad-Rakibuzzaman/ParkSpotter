@@ -5,9 +5,9 @@ TIME_SLOT=[
 
 ]
 PACKAGE=[
-    ('1','1 Month'),
-    ('2','6 Month'),
-    ('3','12 Month'),
+    (1,'1 Month'),
+    (2,'6 Month'),
+    (3,'12 Month'),
 
 ]
 

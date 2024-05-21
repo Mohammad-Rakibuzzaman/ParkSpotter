@@ -98,6 +98,7 @@ class EmployeeRegistrationSerializer(serializers.ModelSerializer):
 class RegistrationSerializer(serializers.ModelSerializer):
     mobile_no = serializers.CharField(write_only=True, required=True)
     username = serializers.CharField(write_only=True, required=True)
+    email = serializers.EmailField(write_only=True, required=True)
     confirm_password = serializers.CharField(write_only=True, required=True)
     password = serializers.CharField(write_only=True, required=True)
     first_name = serializers.CharField(write_only=True, required=True)
@@ -131,6 +132,8 @@ class RegistrationSerializer(serializers.ModelSerializer):
         if password != password2:
             raise serializers.ValidationError(
                 {'error': "Password Doesn't Matched"})
+        if User.objects.filter(username=username).exists():
+            raise serializers.ValidationError({'error': "Username already exists"})
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError(
                 {'error': "Email Already exists"})
@@ -191,7 +194,7 @@ class VehicleSerializer(serializers.ModelSerializer):
 class SlotSerializer(serializers.ModelSerializer):
     class Meta:
         model = Slot
-        fields = ['id', 'slot_number', 'zone']
+        fields = ['id', 'slot_number', 'zone', 'available']
 
 
 class BookingSerializer(serializers.ModelSerializer):
@@ -239,6 +242,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
     # Read-only field for amount
     amount = serializers.ReadOnlyField()
+    end_date = serializers.ReadOnlyField()
 
     def create(self, validated_data):
         instance = Subscription(**validated_data)
