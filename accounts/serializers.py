@@ -7,14 +7,14 @@ class ParkownerSerializer(serializers.ModelSerializer):
     class Meta:
         model = ParkOwner
         fields = '__all__'
-class ParkownerDetailsSerializer(serializers.ModelSerializer):
+class UserDetailsSerializer(serializers.ModelSerializer):
     username = serializers.CharField(read_only=True)
     class Meta:
         model = User
         fields = ['id','username','email', 'first_name', 'last_name']
 
 class ParkownerProfileSerializer(serializers.ModelSerializer):
-    park_owner_id = ParkownerDetailsSerializer()
+    park_owner_id = UserDetailsSerializer()
     class Meta:
         model = ParkOwner
         fields = '__all__'
@@ -33,9 +33,27 @@ class ParkownerProfileSerializer(serializers.ModelSerializer):
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
+    employee = UserDetailsSerializer()
     class Meta:
         model = Employee
         fields = '__all__'
+        
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('employee', {})
+        user_instance = instance.employee
+
+        
+        for attr, value in user_data.items():
+            setattr(user_instance, attr, value)
+        user_instance.save()
+
+        
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        return instance
 
 class EmployeeRegistrationSerializer(serializers.ModelSerializer):
     mobile_no = serializers.CharField(write_only=True, required=True)
@@ -70,6 +88,8 @@ class EmployeeRegistrationSerializer(serializers.ModelSerializer):
         if password != password2:
             raise serializers.ValidationError(
                 {'error': "Password Doesn't Matched"})
+        if User.objects.filter(username=username).exists():
+            raise serializers.ValidationError({'error': "Username already exists"})
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError(
                 {'error': "Email Already exists"})
@@ -87,7 +107,7 @@ class EmployeeRegistrationSerializer(serializers.ModelSerializer):
         employee = User(username=username, email=email,
                     first_name=first_name, last_name=last_name)
         employee.set_password(password)
-        employee.is_active = False
+        employee.is_active = True
         employee.save()
         Employee.objects.create(employee=employee, mobile_no=mobile_no,
                                  id=employee.id, nid_card_no=nid_card_no, address=address, qualification=qualification, joined_date=joined_date, park_owner_id= park_owner)
