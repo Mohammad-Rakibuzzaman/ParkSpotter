@@ -94,7 +94,7 @@ class EmployeeRegistrationView(generics.CreateAPIView):
 
 class UserLoginApiView(APIView):
     def post(self, request):
-        serializer = serializers.UserLoginSerializer(data=request.data)
+        serializer = serializers.UserLoginSerializer(data=self.request.data)
 
         if serializer.is_valid():
             username = serializer.validated_data['username']
@@ -103,7 +103,9 @@ class UserLoginApiView(APIView):
             user = authenticate(username=username, password=password)
 
             if user is not None:
-                token, created = Token.objects.get_or_create(user=user)
+                token, _ = Token.objects.get_or_create(user=user)
+
+                login(request, user)
 
                 
                 is_park_owner = ParkOwner.objects.filter(
