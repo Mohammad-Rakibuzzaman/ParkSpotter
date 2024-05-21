@@ -29,7 +29,7 @@ from .models import ParkOwner, Slot, Zone, Booking, Vehicle, Subscription,Employ
 # Create your views here.
 class ParkownerProfileViewset(viewsets.ModelViewSet):
     queryset = ParkOwner.objects.all()
-    serializer_class = serializers.ParkownerSerializer
+    serializer_class = serializers.ParkownerProfileSerializer
 
 
 class EmployeeProfileViewset(viewsets.ModelViewSet):
@@ -38,7 +38,7 @@ class EmployeeProfileViewset(viewsets.ModelViewSet):
 
 class ParkownerProfileUpdateView(generics.RetrieveUpdateAPIView):
     queryset = models.ParkOwner.objects.all()
-    serializer_class = serializers.ParkownerSerializer
+    serializer_class = serializers.ParkownerProfileSerializer
     lookup_field = 'park_owner_id__id'
 
 class UserRegistrationApiView(APIView):
@@ -81,7 +81,7 @@ def activate(request, uid64, token):
 
 class EmployeeRegistrationView(generics.CreateAPIView):
     serializer_class = serializers.EmployeeRegistrationSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def get_serializer_context(self):
         return {'request': self.request}
@@ -103,8 +103,7 @@ class UserLoginApiView(APIView):
             user = authenticate(username=username, password=password)
 
             if user is not None:
-                login(request, user)
-                token, _ = Token.objects.get_or_create(user=user)
+                token, created = Token.objects.get_or_create(user=user)
 
                 
                 is_park_owner = ParkOwner.objects.filter(
