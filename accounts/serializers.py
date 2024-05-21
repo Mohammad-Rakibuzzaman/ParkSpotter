@@ -63,7 +63,7 @@ class EmployeeRegistrationSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(write_only=True, required=True)
     last_name = serializers.CharField(write_only=True, required=True)
     email = serializers.CharField(write_only=True, required=True)
-    joined_date = serializers.DateTimeField(write_only=True, required=True)
+    joined_date = serializers.DateTimeField(write_only=True, required=False)
     class Meta:
         model = Employee
         fields = ['username', 'first_name', 'last_name','qualification', 'mobile_no',
