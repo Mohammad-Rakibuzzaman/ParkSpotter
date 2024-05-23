@@ -202,7 +202,7 @@ class UserLoginSerializer(serializers.Serializer):
 class ZoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = Zone
-        fields = ['park_owner', 'name', 'capacity', 'created_at']
+        fields = ['id','park_owner', 'name', 'capacity', 'created_at']
 
 
 class VehicleSerializer(serializers.ModelSerializer):
