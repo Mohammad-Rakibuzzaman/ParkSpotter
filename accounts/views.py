@@ -23,6 +23,8 @@ from django.contrib.sites.shortcuts import get_current_site
 from rest_framework import generics
 #rtz added 12-5
 from .models import ParkOwner, Slot, Zone, Booking, Vehicle, Subscription,Employee
+from customer.models import Customer
+from django.db.models import Q
 
 
 # Create your views here.
@@ -96,20 +98,32 @@ class UserLoginApiView(APIView):
         serializer = serializers.UserLoginSerializer(data=self.request.data)
 
         if serializer.is_valid():
-            username = serializer.validated_data['username']
+            login_field = serializer.validated_data['login']
             password = serializer.validated_data['password']
 
-            user = authenticate(username=username, password=password)
+            # Authenticate using the custom backend
+            user = authenticate(
+                request, username=login_field, password=password)
+            if user is None:
+                try:
+                    user = User.objects.get(
+                        Q(username=login_field) | Q(email=login_field) | Q(
+                            customer__mobile_no=login_field)
+                    )
+                    if not user.check_password(password):
+                        user = None
+                except User.DoesNotExist:
+                    user = None
 
             if user is not None:
                 token, _ = Token.objects.get_or_create(user=user)
-
                 login(request, user)
 
-                
                 is_park_owner = ParkOwner.objects.filter(
                     park_owner_id=user).exists()
                 is_employee = Employee.objects.filter(employee=user).exists()
+                is_customer = Customer.objects.filter(
+                    customer_id=user).exists()
 
                 if is_park_owner:
                     return Response({
@@ -123,16 +137,21 @@ class UserLoginApiView(APIView):
                         'user_id': user.id,
                         'role': 'employee'
                     })
+                elif is_customer:
+                    return Response({
+                        'token': token.key,
+                        'user_id': user.id,
+                        'role': 'customer'
+                    })
                 else:
                     return Response(
-                        {"detail": "User is neither a park owner nor an employee."},
+                        {"detail": "User role not defined."},
                         status=status.HTTP_403_FORBIDDEN
                     )
 
             return Response({'error': "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class UserLogoutView(APIView):
     def get(self, request):
