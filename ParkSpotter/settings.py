@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'accounts',
+    'booking',
+    'customer',
     "corsheaders",
 ]
 CORS_ORIGIN_ALLOW_ALL = True
