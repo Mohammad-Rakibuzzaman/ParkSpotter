@@ -1,6 +1,7 @@
 from rest_framework import serializers, status
 from django.contrib.auth.models import User
 from .models import ParkOwner, Zone, Booking, Vehicle, Subscription, Employee,Slot
+from django.db.models import Q
 
 
 class ParkownerSerializer(serializers.ModelSerializer):
@@ -173,29 +174,30 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 
 class UserLoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
+    login = serializers.CharField()
     password = serializers.CharField()
 
     def validate(self, data):
-        username = data.get('username')
+        login = data.get('login')
         password = data.get('password')
 
-        if username and password:
-            user = User.objects.filter(username=username).first()
+        if login and password:
+            user = User.objects.filter(
+                Q(username=login) | Q(email=login) | Q(
+                    customer__mobile_no=login)
+            ).first()
 
             if user and user.check_password(password):
                 return data
             else:
                 raise serializers.ValidationError(
-                    "Incorrect username or password.",
-                    code='invalid_credentials',
-                    status_code=status.HTTP_401_UNAUTHORIZED
+                    "Incorrect login or password.",
+                    code='invalid_credentials'
                 )
         else:
             raise serializers.ValidationError(
-                "Both username and password are required.",
-                code='missing_credentials',
-                status_code=status.HTTP_400_BAD_REQUEST
+                "Both login and password are required.",
+                code='missing_credentials'
             )
 
 
