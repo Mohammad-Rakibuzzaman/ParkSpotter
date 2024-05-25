@@ -4,6 +4,7 @@ import math
 from .constants import TIME_SLOT,PACKAGE
 from datetime import timedelta, date
 from django.db.models import Sum
+from decimal import Decimal
 
 # Create your models here.
 
@@ -124,7 +125,7 @@ class Slot(models.Model):
     zone = models.ForeignKey(
         Zone, related_name='slots', on_delete=models.CASCADE,null=True)
     slot_number = models.PositiveIntegerField()
-    available = models.BooleanField(default=False)
+    available = models.BooleanField(default=True)
 
     def __str__(self):
         return f"Slot {self.slot_number} for {self.zone}"
@@ -141,78 +142,68 @@ class Booking (models.Model):
     slot = models.ForeignKey(
         Slot, on_delete=models.CASCADE, null=True, blank=True)
     fine = models.IntegerField(default=0, null=True, blank=True)
-    time_slot = models.IntegerField(choices=TIME_SLOT)
     status = models.BooleanField(default=False)
-    check_in_time = models.DateTimeField(auto_now_add=True)
+    rate_per_minute = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal('0.50'))
+    booking_time = models.DateTimeField(
+        auto_now_add=True, blank=True, null=True)
+    check_in_time = models.DateTimeField(blank=True, null=True)
+    appoximate_check_out_time = models.DateTimeField(blank=True, null=True)
     check_out_time = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         unique_together = ('slot', 'status')
 
-    def find_next_available_slot(self):
-        if not self.zone:
-            return None
-
-        booked_slots = Booking.objects.filter(
-            zone=self.zone, status=True).values_list('slot_id', flat=True)
-        booked_slots = list(booked_slots)
-
-        available_slots = Slot.objects.filter(
-            zone=self.zone, available=False).exclude(id__in=booked_slots)
-        if available_slots.exists():
-            return available_slots.first()
-        return None
-
     def save(self, *args, **kwargs):
-        # If it's an update, handle the old slot availability
-        if self.pk:
-            old_booking = Booking.objects.get(pk=self.pk)
-            if old_booking.slot and old_booking.slot != self.slot:
-                old_booking.slot.available = False
-                old_booking.slot.save()
-
-        # Assign the slot if not already assigned
-        if self.slot is None:
-            self.slot = self.find_next_available_slot()
-            if self.slot is None:
-                raise ValueError("No available slots in the selected zone.")
-
-        # Check if the selected slot is already booked
-        if Booking.objects.filter(slot=self.slot, status=True).exists():
+        # Check if the slot is available before booking
+        if self.slot and not self.slot.available:
             raise ValueError("This slot is already booked.")
 
-        # Mark the slot as available
-        self.slot.available = True
-        self.slot.save()
+        # Ensure that the slot is marked as unavailable upon booking
+        if self.slot:
+            self.slot.available = False
+            self.slot.save()
+        
+        if self.check_out_time and self.appoximate_check_out_time:
+            self.calculate_fine()
 
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        # Mark the slot as unavailable when the booking is deleted
+        # Optionally, mark the slot as available when the booking is deleted
         if self.slot:
-            self.slot.available = False
+            self.slot.available = True
             self.slot.save()
         super().delete(*args, **kwargs)
-
     def ticket_no(self):
         zone_name = self.zone.name
         ticket_number = 1000 + self.id
         return f"SP-{zone_name}-{ticket_number}"
 
+    def calculate_booking_amount(self):
+        if self.check_in_time is None or self.appoximate_check_out_time is None:
+            return Decimal('0.00')
+        duration_seconds = Decimal(
+            (self.appoximate_check_out_time - self.check_in_time).total_seconds())
+        duration_minutes = duration_seconds / Decimal(60)
+        return round(duration_minutes * self.rate_per_minute, 2)
+
     @property
     def amount(self):
-        if self.time_slot == 1:
-            return 30
-        elif self.time_slot == 2:
-            return 50
-        elif self.time_slot == 3:
-            return 100
-        else:
-            return 0
+        return self.calculate_booking_amount()
+    
+    def calculate_fine(self):
+        if self.check_out_time and self.appoximate_check_out_time:
+            overtime = self.check_out_time - self.appoximate_check_out_time
+            if overtime > timedelta(0):
+                overtime_minutes = overtime.total_seconds() / 60
+                self.fine = 20 + round(overtime_minutes)
+
+    @property
+    def total_amount(self):
+        return self.amount + (self.fine or Decimal('0.00'))
 
     def __str__(self):
-        return f"Booking for {self.vehicle} ({self.get_time_slot_display()})"
-
-
-
+        return f"Booking for {self.vehicle} ({self.check_in_time} - {self.appoximate_check_out_time})"
+    
 
