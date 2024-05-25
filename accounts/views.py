@@ -2,6 +2,8 @@ from django.shortcuts import render
 from rest_framework import viewsets
 from . import models
 from . import serializers
+from rest_framework.decorators import action
+from django.utils import timezone
 #12-5 added by rtz
 from .serializers import SlotSerializer, ZoneSerializer, BookingSerializer, VehicleSerializer, SubscriptionSerializer
 from rest_framework.permissions import IsAuthenticated
@@ -171,10 +173,43 @@ class SlotAPIView(viewsets.ModelViewSet):
     serializer_class = SlotSerializer
     
 
-class BookingCreateAPIView(viewsets.ModelViewSet):
+class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Extract the slot instance from the request data
+        slot_id = request.data.get('slot')
+        slot_instance = Slot.objects.get(pk=slot_id)
+
+        # Pass the slot instance to the serializer for booking creation
+        serializer.validated_data['slot'] = slot_instance
+
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def update(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            instance.check_out_time = timezone.now()
+            instance.status = False
+            instance.slot.available = True
+            instance.slot.save()
+            instance.calculate_fine()  # Calculate fine if applicable
+            instance.save()
+
+            serializer = self.get_serializer(instance)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Booking.DoesNotExist:
+            return Response({'error': 'Booking not found.'}, status=status.HTTP_404_NOT_FOUND)
+        except Slot.DoesNotExist:
+            return Response({'error': 'Slot not found.'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class SubscriptionViewSet(viewsets.ModelViewSet):
     queryset = Subscription.objects.all()
@@ -186,3 +221,4 @@ def nearby_parking_lots(request):
     return render(request, 'nearby_parking_lots.html', {
         'park_owners': park_owners,
     })
+

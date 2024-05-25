@@ -223,39 +223,47 @@ class BookingSerializer(serializers.ModelSerializer):
     vehicle = VehicleSerializer()
     ticket_no = serializers.SerializerMethodField()
     amount = serializers.ReadOnlyField()
+    total_amount = serializers.ReadOnlyField()
 
     class Meta:
         model = Booking
-        fields = ['zone', 'slot', 'time_slot', 'vehicle', 'ticket_no',
-                  'amount', 'fine', 'check_in_time', 'check_out_time']
-        read_only_fields = ['ticket_no', 'slot']
+        fields = ['zone', 'slot', 'vehicle', 'ticket_no',
+                  'amount', 'fine', 'check_in_time', 'check_out_time', 'rate_per_minute', 'booking_time', 'appoximate_check_out_time', 'total_amount']
+        read_only_fields = ['ticket_no']
 
-    def get_ticket_no(self, obj):
-        return obj.ticket_no()
+    def get_ticket_no(self, instance):
+        return instance.ticket_no()
 
-    def create(self, validated_data):
-        vehicle_data = validated_data.pop('vehicle')
-        vehicle = Vehicle.objects.create(**vehicle_data)
+    #     model = Booking
+    #     fields = ['zone', 'slot', 'time_slot', 'vehicle', 'ticket_no',
+    #               'amount', 'fine', 'check_in_time', 'check_out_time']
+    #     read_only_fields = ['ticket_no', 'slot']
 
-        # Create the booking instance
-        booking = Booking(vehicle=vehicle, **validated_data, status=True)
+    # def get_ticket_no(self, obj):
+    #     return obj.ticket_no()
 
-        # Assign the slot before saving
-        booking.slot = booking.find_next_available_slot()
-        if booking.slot is None:
-            raise serializers.ValidationError(
-                "No available slots in the selected zone.")
+    # def create(self, validated_data):
+    #     vehicle_data = validated_data.pop('vehicle')
+    #     vehicle = Vehicle.objects.create(**vehicle_data)
 
-        booking.save()
-        return booking
+    #     # Create the booking instance
+    #     booking = Booking(vehicle=vehicle, **validated_data, status=True)
 
-    def validate(self, data):
-        # Check if the selected slot is already booked
-        slot = data.get('slot')
-        if slot and Booking.objects.filter(slot=slot, status=True).exists():
-            raise serializers.ValidationError("This slot is already booked.")
-        return data
+    #     # Assign the slot before saving
+    #     booking.slot = booking.find_next_available_slot()
+    #     if booking.slot is None:
+    #         raise serializers.ValidationError(
+    #             "No available slots in the selected zone.")
 
+    #     booking.save()
+    #     return booking
+
+    # def validate(self, data):
+    #     # Check if the selected slot is already booked
+    #     slot = data.get('slot')
+    #     if slot and Booking.objects.filter(slot=slot, status=True).exists():
+    #         raise serializers.ValidationError("This slot is already booked.")
+    #     return data
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
