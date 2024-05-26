@@ -227,12 +227,34 @@ class BookingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = ['zone', 'slot', 'vehicle', 'ticket_no',
+        fields = ['id','employee','customer','zone', 'slot', 'vehicle', 'ticket_no',
                   'amount', 'fine', 'check_in_time', 'check_out_time', 'rate_per_minute', 'booking_time', 'appoximate_check_out_time', 'total_amount']
-        read_only_fields = ['ticket_no']
+        read_only_fields = ['ticket_no','rate_per_minute','fine']
 
     def get_ticket_no(self, instance):
         return instance.ticket_no()
+
+    def create(self, validated_data):
+        vehicle_data = validated_data.pop('vehicle')
+        vehicle_instance = Vehicle.objects.create(**vehicle_data)
+        booking_instance = Booking.objects.create(vehicle=vehicle_instance, **validated_data)
+        return booking_instance
+    
+    def update(self, instance, validated_data):
+        vehicle_data = validated_data.pop('vehicle', None)
+        if vehicle_data:
+            # Update the nested vehicle instance
+            vehicle_instance = instance.vehicle
+            for attr, value in vehicle_data.items():
+                setattr(vehicle_instance, attr, value)
+            vehicle_instance.save()
+        
+        # Update Booking instance
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        return instance
 
     #     model = Booking
     #     fields = ['zone', 'slot', 'time_slot', 'vehicle', 'ticket_no',
