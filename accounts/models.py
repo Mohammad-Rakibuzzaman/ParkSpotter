@@ -73,12 +73,19 @@ class ParkOwner(models.Model):
         max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(
         max_digits=9, decimal_places=6, null=True, blank=True)
+    available_slot = models.PositiveIntegerField(default=0)
     
     def update_capacity(self):
         total_capacity = self.park_zones.aggregate(
             total=Sum('capacity'))['total'] or 0
         self.capacity = total_capacity
         self.save(update_fields=['capacity'])
+
+    def update_available_slot(self):
+        total_available_slots = Slot.objects.filter(
+            zone__park_owner=self, available=True).count()
+        self.available_slot = total_available_slots
+        self.save(update_fields=['available_slot'])
 
     def __str__(self):
         return self.park_owner_id.username
@@ -95,8 +102,6 @@ class Employee(models.Model):
     address = models.CharField(max_length=200, blank=True, null=True)
     joined_date = models.DateTimeField(
         auto_now_add=True, null=True, blank=True)
-
-
 
 
 
@@ -128,6 +133,15 @@ class Slot(models.Model):
         Zone, related_name='slots', on_delete=models.CASCADE,null=True)
     slot_number = models.PositiveIntegerField()
     available = models.BooleanField(default=True)
+
+    def save(self, *args, **kwargs):
+        updating = self.pk is not None
+        previous_slot = None
+        if updating:
+            previous_slot = Slot.objects.get(pk=self.pk)
+        super().save(*args, **kwargs)
+        if not updating or (updating and previous_slot.available != self.available):
+            self.zone.park_owner.update_available_slot()
 
     def __str__(self):
         return f"Slot {self.slot_number} for {self.zone}"
