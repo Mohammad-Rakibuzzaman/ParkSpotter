@@ -1,12 +1,31 @@
 from rest_framework import serializers, status
 from django.contrib.auth.models import User
+
+from accounts.serializers import UserDetailsSerializer
 from . models import Customer
 
 
 class CustomerSerializer(serializers.ModelSerializer):
+    customer_id = UserDetailsSerializer()
     class Meta:
         model = Customer
         fields = '__all__'
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('customer_id', {})
+        user_instance = instance.customer_id
+
+        
+        for attr, value in user_data.items():
+            setattr(user_instance, attr, value)
+        user_instance.save()
+
+        
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        return instance
 
 
 class CustomerRegistrationSerializer(serializers.ModelSerializer):
@@ -49,6 +68,5 @@ class CustomerRegistrationSerializer(serializers.ModelSerializer):
 
         user = User.objects.create_user(
             username=username, email=email, first_name=first_name, last_name=last_name, password=password)
-        customer = Customer.objects.create(
-            customer_id=user, mobile_no=mobile_no)
+        customer = Customer.objects.create(id=user.id, customer_id=user, mobile_no=mobile_no)
         return customer

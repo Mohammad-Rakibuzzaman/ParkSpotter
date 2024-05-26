@@ -180,36 +180,39 @@ class BookingViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        # Extract the slot instance from the request data
-        slot_id = request.data.get('slot')
-        slot_instance = Slot.objects.get(pk=slot_id)
-
-        # Pass the slot instance to the serializer for booking creation
-        serializer.validated_data['slot'] = slot_instance
-
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
+    
     def update(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            instance.check_out_time = timezone.now()
-            instance.status = False
-            instance.slot.available = True
-            instance.slot.save()
-            instance.calculate_fine()  # Calculate fine if applicable
-            instance.save()
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        if getattr(instance, '_prefetched_objects_cache', None):
+            instance._prefetched_objects_cache = {}
 
-            serializer = self.get_serializer(instance)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except Booking.DoesNotExist:
-            return Response({'error': 'Booking not found.'}, status=status.HTTP_404_NOT_FOUND)
-        except Slot.DoesNotExist:
-            return Response({'error': 'Slot not found.'}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.data)
+
+    # def update(self, request, *args, **kwargs):
+    #     try:
+    #         instance = self.get_object()
+    #         instance.check_out_time = timezone.now()
+    #         instance.status = False
+    #         instance.slot.available = True
+    #         instance.slot.save()
+    #         instance.calculate_fine()  # Calculate fine if applicable
+    #         instance.save()
+
+    #         serializer = self.get_serializer(instance)
+    #         return Response(serializer.data, status=status.HTTP_200_OK)
+    #     except Booking.DoesNotExist:
+    #         return Response({'error': 'Booking not found.'}, status=status.HTTP_404_NOT_FOUND)
+    #     except Slot.DoesNotExist:
+    #         return Response({'error': 'Slot not found.'}, status=status.HTTP_404_NOT_FOUND)
+    #     except Exception as e:
+    #         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class SubscriptionViewSet(viewsets.ModelViewSet):
     queryset = Subscription.objects.all()
