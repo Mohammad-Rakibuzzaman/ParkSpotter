@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 import math
+
+from customer.models import Customer
 from .constants import TIME_SLOT,PACKAGE
 from datetime import timedelta, date
 from django.db.models import Sum
@@ -136,6 +138,10 @@ class Vehicle(models.Model):
 
 
 class Booking (models.Model):
+    employee= models.ForeignKey(
+        Employee, on_delete=models.CASCADE, null=True, blank=True)
+    customer= models.ForeignKey(
+        Customer, on_delete=models.CASCADE, null=True, blank=True)
     zone = models.ForeignKey(
         Zone, on_delete=models.CASCADE, null=True, blank=True)
     vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE)
@@ -153,28 +159,46 @@ class Booking (models.Model):
 
     class Meta:
         unique_together = ('slot', 'status')
+    
 
     def save(self, *args, **kwargs):
         # Check if the slot is available before booking
-        if self.slot and not self.slot.available:
+        if Booking.objects.filter(slot=self.slot, check_out_time__isnull=True).exclude(id=self.id).exists():
             raise ValueError("This slot is already booked.")
-
-        # Ensure that the slot is marked as unavailable upon booking
-        if self.slot:
-            self.slot.available = False
-            self.slot.save()
         
+        if self.slot:
+            if not self.check_out_time:
+                self.slot.available = False
+                self.status = True  
+            else:
+                self.slot.available = True
+                self.status = False  
+            self.slot.save()
+
         if self.check_out_time and self.appoximate_check_out_time:
             self.calculate_fine()
 
         super().save(*args, **kwargs)
 
-    def delete(self, *args, **kwargs):
-        # Optionally, mark the slot as available when the booking is deleted
-        if self.slot:
-            self.slot.available = True
-            self.slot.save()
-        super().delete(*args, **kwargs)
+        # if self.slot and not self.slot.available:
+        #     raise ValueError("This slot is already booked.")
+
+        # Ensure that the slot is marked as unavailable upon booking
+        # if self.slot:
+        #     self.slot.available = False
+        #     self.slot.save()
+        
+        # if self.check_out_time and self.appoximate_check_out_time:
+        #     self.calculate_fine()
+
+        # super().save(*args, **kwargs)
+
+    # def delete(self, *args, **kwargs):
+    #     # Optionally, mark the slot as available when the booking is deleted
+    #     if self.slot:
+    #         self.slot.available = True
+    #         self.slot.save()
+    #     super().delete(*args, **kwargs)
     def ticket_no(self):
         zone_name = self.zone.name
         ticket_number = 1000 + self.id
