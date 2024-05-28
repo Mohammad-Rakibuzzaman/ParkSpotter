@@ -28,7 +28,7 @@ from rest_framework import generics
 from .models import ParkOwner, Slot, Zone, Booking, Vehicle, Subscription, Employee, Salary
 from customer.models import Customer
 from django.db.models import Q
-
+from datetime import datetime
 
 # Create your views here.
 class ParkownerProfileViewset(viewsets.ModelViewSet):
@@ -251,6 +251,52 @@ def nearby_parking_lots(request):
     })
 
 
+# class ParkOwnerDashboardViewSet(viewsets.ViewSet):
+#     permission_classes = [IsAuthenticated]
+
+#     def list(self, request):
+#         user = request.user
+#         try:
+#             park_owner = ParkOwner.objects.get(park_owner_id=user)
+#         except ParkOwner.DoesNotExist:
+#             return Response({"error": "You are not a ParkOwner."}, status=status.HTTP_403_FORBIDDEN)
+
+#         # Get booking summary
+#         bookings = Booking.objects.filter(zone__park_owner=park_owner)
+#         booking_serializer = BookingSummarySerializer(bookings, many=True)
+
+#         # Get zone summary
+#         zones = Zone.objects.filter(park_owner=park_owner)
+#         zone_serializer = ZoneSummarySerializer(zones, many=True)
+
+#         employees = Employee.objects.filter(park_owner_id=park_owner)
+#         employee_serializer = EmployeeSerializer(employees, many=True)
+
+#         salaries = Salary.objects.filter(employee__in=employees)
+#         salary_serializer = SalarySerializer(salaries, many=True)
+
+#         # Total earnings
+#         total_earnings = sum(booking.total_amount for booking in bookings)
+#         total_salary_cost = sum(salary.amount for salary in salaries)
+#         net_revenue = total_earnings - total_salary_cost
+#         # Total bookings
+#         total_bookings = bookings.count()
+#         total_employees = employees.count()
+
+#         dashboard_data = {
+#             "total_earnings": total_earnings,
+#             "total_bookings": total_bookings,
+#             "employees": employee_serializer.data,
+#             "bookings": booking_serializer.data,
+#             "zones": zone_serializer.data,
+#             "total_salary_cost": total_salary_cost,
+#             "net_revenue": net_revenue,
+#             "total_employees":total_employees,
+#         }
+
+#         return Response(dashboard_data)
+
+
 class ParkOwnerDashboardViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
@@ -261,19 +307,42 @@ class ParkOwnerDashboardViewSet(viewsets.ViewSet):
         except ParkOwner.DoesNotExist:
             return Response({"error": "You are not a ParkOwner."}, status=status.HTTP_403_FORBIDDEN)
 
-        # Get booking summary
+        # Get date filters from request
+        start_date_str = request.query_params.get('start_date')
+        end_date_str = request.query_params.get('end_date')
+        start_date = end_date = None
+
+        if start_date_str and end_date_str:
+            try:
+                start_date = datetime.strptime(
+                    start_date_str, '%Y-%m-%d').date()
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Filter bookings based on date range
         bookings = Booking.objects.filter(zone__park_owner=park_owner)
+        if start_date and end_date:
+            bookings = bookings.filter(
+                booking_date__date__gte=start_date,
+                booking_date__date__lte=end_date
+            )
         booking_serializer = BookingSummarySerializer(bookings, many=True)
+
+        # Filter salaries based on date range
+        employees = Employee.objects.filter(park_owner_id=park_owner)
+        employee_serializer = EmployeeSerializer(employees, many=True)
+        salaries = Salary.objects.filter(employee__in=employees)
+        if start_date and end_date:
+            salaries = salaries.filter(
+                payment_date__gte=start_date,
+                payment_date__lte=end_date
+            )
+        salary_serializer = SalarySerializer(salaries, many=True)
 
         # Get zone summary
         zones = Zone.objects.filter(park_owner=park_owner)
         zone_serializer = ZoneSummarySerializer(zones, many=True)
-
-        employees = Employee.objects.filter(park_owner_id=park_owner)
-        employee_serializer = EmployeeSerializer(employees, many=True)
-
-        salaries = Salary.objects.filter(employee__in=employees)
-        salary_serializer = SalarySerializer(salaries, many=True)
 
         # Total earnings
         total_earnings = sum(booking.total_amount for booking in bookings)
@@ -291,7 +360,7 @@ class ParkOwnerDashboardViewSet(viewsets.ViewSet):
             "zones": zone_serializer.data,
             "total_salary_cost": total_salary_cost,
             "net_revenue": net_revenue,
-            "total_employees":total_employees,
+            "total_employees": total_employees,
         }
 
         return Response(dashboard_data)
