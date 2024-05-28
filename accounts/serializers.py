@@ -1,6 +1,6 @@
 from rest_framework import serializers, status
 from django.contrib.auth.models import User
-from .models import ParkOwner, Zone, Booking, Vehicle, Subscription, Employee,Slot
+from .models import ParkOwner, Zone, Booking, Vehicle, Subscription, Employee, Slot, Salary
 from django.db.models import Q
 
 
@@ -39,6 +39,19 @@ class EmployeeSerializer(serializers.ModelSerializer):
         model = Employee
         fields = '__all__'
         
+
+class SalarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Salary
+        fields = ['id', 'employee', 'amount', 'is_paid',
+                  'payment_date', 'effective_from', 'effective_to']
+        read_only_fields = ['payment_date', 'is_paid']
+
+
+class SalaryPaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Salary
+        fields = ['id','effective_from', 'effective_to']
 
     def update(self, instance, validated_data):
         user_data = validated_data.pop('employee', {})

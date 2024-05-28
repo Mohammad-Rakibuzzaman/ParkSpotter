@@ -5,7 +5,7 @@ from . import serializers
 from rest_framework.decorators import action
 from django.utils import timezone
 #12-5 added by rtz
-from .serializers import SlotSerializer, ZoneSerializer, BookingSerializer, VehicleSerializer, SubscriptionSerializer
+from .serializers import SlotSerializer, ZoneSerializer, BookingSerializer, VehicleSerializer, SubscriptionSerializer, SalarySerializer, SalaryPaymentSerializer
 from rest_framework.permissions import IsAuthenticated
 
 from rest_framework import status
@@ -24,7 +24,7 @@ from django.shortcuts import redirect
 from django.contrib.sites.shortcuts import get_current_site
 from rest_framework import generics
 #rtz added 12-5
-from .models import ParkOwner, Slot, Zone, Booking, Vehicle, Subscription,Employee
+from .models import ParkOwner, Slot, Zone, Booking, Vehicle, Subscription, Employee, Salary
 from customer.models import Customer
 from django.db.models import Q
 
@@ -38,6 +38,30 @@ class ParkownerProfileViewset(viewsets.ModelViewSet):
 class EmployeeProfileViewset(viewsets.ModelViewSet):
     queryset = Employee.objects.all()
     serializer_class = serializers.EmployeeSerializer
+
+
+class SalaryViewSet(viewsets.ModelViewSet):
+    queryset = Salary.objects.all()
+    serializer_class = SalarySerializer
+
+    @action(detail=True, methods=['post'])
+    def pay_salary(self, request, pk=None):
+        salary = self.get_object()
+        if salary.is_paid:
+            return Response({"detail": "Salary already paid."}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = SalaryPaymentSerializer(data=request.data)
+        if serializer.is_valid():
+            salary.is_paid = True
+            salary.payment_date = timezone.now()
+            salary.effective_from = serializer.validated_data.get(
+                'effective_from')
+            salary.effective_to = serializer.validated_data.get('effective_to')
+            salary.save()
+            return Response(SalarySerializer(salary).data)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ParkownerProfileUpdateView(generics.RetrieveUpdateAPIView):
     queryset = models.ParkOwner.objects.all()
