@@ -102,8 +102,22 @@ class Employee(models.Model):
     address = models.CharField(max_length=200, blank=True, null=True)
     joined_date = models.DateTimeField(
         auto_now_add=True, null=True, blank=True)
+    
+    def __str__(self):
+        return self.employee.username
 
 
+class Salary(models.Model):
+    employee = models.ForeignKey(
+        Employee, related_name="salaries", on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    is_paid = models.BooleanField(default=False)
+    payment_date = models.DateTimeField(auto_now_add=True)
+    effective_from = models.DateField()
+    effective_to = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Employee: {self.employee.employee.username}"
 
 class Zone(models.Model):
     park_owner = models.ForeignKey(
@@ -170,7 +184,7 @@ class Booking (models.Model):
     check_in_time = models.DateTimeField(blank=True, null=True)
     appoximate_check_out_time = models.DateTimeField(blank=True, null=True)
     check_out_time = models.DateTimeField(blank=True, null=True)
-
+    is_paid = models.BooleanField(default=False)
     class Meta:
         unique_together = ('slot', 'status')
     
@@ -183,10 +197,13 @@ class Booking (models.Model):
         if self.slot:
             if not self.check_out_time:
                 self.slot.available = False
-                self.status = True  
+                self.status = True 
+                self.is_paid = False
             else:
                 self.slot.available = True
                 self.status = False  
+                self.is_paid = True
+                
             self.slot.save()
 
         if self.check_out_time and self.appoximate_check_out_time:
