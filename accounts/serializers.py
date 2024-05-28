@@ -313,3 +313,20 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         instance = Subscription(**validated_data)
         instance.save()
         return instance
+
+
+class BookingSummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Booking
+        fields = ['id', 'total_amount', 'check_in_time', 'check_out_time','fine']
+
+
+class ZoneSummarySerializer(serializers.ModelSerializer):
+    available_slots = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Zone
+        fields = ['id', 'name', 'capacity', 'available_slots']
+
+    def get_available_slots(self, obj):
+        return Slot.objects.filter(zone=obj, available=True).count()

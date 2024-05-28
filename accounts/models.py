@@ -102,6 +102,9 @@ class Employee(models.Model):
     address = models.CharField(max_length=200, blank=True, null=True)
     joined_date = models.DateTimeField(
         auto_now_add=True, null=True, blank=True)
+    
+    def __str__(self):
+        return self.employee.username
 
 
 class Salary(models.Model):
@@ -112,6 +115,9 @@ class Salary(models.Model):
     payment_date = models.DateTimeField(auto_now_add=True)
     effective_from = models.DateField()
     effective_to = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Employee: {self.employee.employee.username}"
 
 class Zone(models.Model):
     park_owner = models.ForeignKey(
