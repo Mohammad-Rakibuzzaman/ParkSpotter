@@ -4,8 +4,9 @@ from . import models
 from . import serializers
 from rest_framework.decorators import action
 from django.utils import timezone
+from django.db.models import Sum
 #12-5 added by rtz
-from .serializers import SlotSerializer, ZoneSerializer, BookingSerializer, VehicleSerializer, SubscriptionSerializer
+from .serializers import SlotSerializer, ZoneSerializer, BookingSerializer, VehicleSerializer, SubscriptionSerializer, SalarySerializer, SalaryPaymentSerializer, BookingSummarySerializer, ZoneSummarySerializer, EmployeeSerializer
 from rest_framework.permissions import IsAuthenticated
 
 from rest_framework import status
@@ -24,7 +25,7 @@ from django.shortcuts import redirect
 from django.contrib.sites.shortcuts import get_current_site
 from rest_framework import generics
 #rtz added 12-5
-from .models import ParkOwner, Slot, Zone, Booking, Vehicle, Subscription,Employee
+from .models import ParkOwner, Slot, Zone, Booking, Vehicle, Subscription, Employee, Salary
 from customer.models import Customer
 from django.db.models import Q
 
@@ -38,6 +39,30 @@ class ParkownerProfileViewset(viewsets.ModelViewSet):
 class EmployeeProfileViewset(viewsets.ModelViewSet):
     queryset = Employee.objects.all()
     serializer_class = serializers.EmployeeSerializer
+
+
+class SalaryViewSet(viewsets.ModelViewSet):
+    queryset = Salary.objects.all()
+    serializer_class = SalarySerializer
+
+    @action(detail=True, methods=['post'])
+    def pay_salary(self, request, pk=None):
+        salary = self.get_object()
+        if salary.is_paid:
+            return Response({"detail": "Salary already paid."}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = SalaryPaymentSerializer(data=request.data)
+        if serializer.is_valid():
+            salary.is_paid = True
+            salary.payment_date = timezone.now()
+            salary.effective_from = serializer.validated_data.get(
+                'effective_from')
+            salary.effective_to = serializer.validated_data.get('effective_to')
+            salary.save()
+            return Response(SalarySerializer(salary).data)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ParkownerProfileUpdateView(generics.RetrieveUpdateAPIView):
     queryset = models.ParkOwner.objects.all()
@@ -225,3 +250,48 @@ def nearby_parking_lots(request):
         'park_owners': park_owners,
     })
 
+
+class ParkOwnerDashboardViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request):
+        user = request.user
+        try:
+            park_owner = ParkOwner.objects.get(park_owner_id=user)
+        except ParkOwner.DoesNotExist:
+            return Response({"error": "You are not a ParkOwner."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Get booking summary
+        bookings = Booking.objects.filter(zone__park_owner=park_owner)
+        booking_serializer = BookingSummarySerializer(bookings, many=True)
+
+        # Get zone summary
+        zones = Zone.objects.filter(park_owner=park_owner)
+        zone_serializer = ZoneSummarySerializer(zones, many=True)
+
+        employees = Employee.objects.filter(park_owner_id=park_owner)
+        employee_serializer = EmployeeSerializer(employees, many=True)
+
+        salaries = Salary.objects.filter(employee__in=employees)
+        salary_serializer = SalarySerializer(salaries, many=True)
+
+        # Total earnings
+        total_earnings = sum(booking.total_amount for booking in bookings)
+        total_salary_cost = sum(salary.amount for salary in salaries)
+        net_revenue = total_earnings - total_salary_cost
+        # Total bookings
+        total_bookings = bookings.count()
+        total_employees = employees.count()
+
+        dashboard_data = {
+            "total_earnings": total_earnings,
+            "total_bookings": total_bookings,
+            "employees": employee_serializer.data,
+            "bookings": booking_serializer.data,
+            "zones": zone_serializer.data,
+            "total_salary_cost": total_salary_cost,
+            "net_revenue": net_revenue,
+            "total_employees":total_employees,
+        }
+
+        return Response(dashboard_data)
