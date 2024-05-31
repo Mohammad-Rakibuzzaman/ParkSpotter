@@ -211,25 +211,6 @@ class Booking (models.Model):
 
         super().save(*args, **kwargs)
 
-        # if self.slot and not self.slot.available:
-        #     raise ValueError("This slot is already booked.")
-
-        # Ensure that the slot is marked as unavailable upon booking
-        # if self.slot:
-        #     self.slot.available = False
-        #     self.slot.save()
-        
-        # if self.check_out_time and self.appoximate_check_out_time:
-        #     self.calculate_fine()
-
-        # super().save(*args, **kwargs)
-
-    # def delete(self, *args, **kwargs):
-    #     # Optionally, mark the slot as available when the booking is deleted
-    #     if self.slot:
-    #         self.slot.available = True
-    #         self.slot.save()
-    #     super().delete(*args, **kwargs)
     def ticket_no(self):
         zone_name = self.zone.name
         ticket_number = 1000 + self.id

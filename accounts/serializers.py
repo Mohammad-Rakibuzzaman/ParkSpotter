@@ -241,8 +241,8 @@ class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = ['id','employee','customer','zone', 'slot', 'vehicle', 'ticket_no',
-                  'amount', 'fine', 'check_in_time', 'check_out_time', 'rate_per_minute', 'booking_time', 'appoximate_check_out_time', 'total_amount']
-        read_only_fields = ['ticket_no','rate_per_minute','fine']
+                  'amount', 'fine', 'check_in_time', 'check_out_time', 'rate_per_minute', 'booking_time', 'appoximate_check_out_time', 'total_amount','is_paid']
+        read_only_fields = ['ticket_no', 'rate_per_minute', 'fine', 'is_paid']
 
     def get_ticket_no(self, instance):
         return instance.ticket_no()
