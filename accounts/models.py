@@ -210,6 +210,7 @@ class Booking (models.Model):
             self.calculate_fine()
 
         super().save(*args, **kwargs)
+        self.update_customer_points()
 
     def ticket_no(self):
         zone_name = self.zone.name
@@ -242,4 +243,14 @@ class Booking (models.Model):
     def __str__(self):
         return f"Booking for {self.vehicle} ({self.check_in_time} - {self.appoximate_check_out_time})"
     
+    def update_customer_points(self):
+        if self.customer:
+            duration_hours = (self.appoximate_check_out_time - self.check_in_time).total_seconds() / 3600
+            points = int(duration_hours)
+            
+            if self.fine > 0:
+                points -= 1
+            
+            self.customer.points += points
+            self.customer.save(update_fields=['points'])
 

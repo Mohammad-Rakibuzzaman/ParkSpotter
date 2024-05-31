@@ -9,6 +9,7 @@ class Customer(models.Model):
     plate_number = models.CharField(max_length=50, null=True, blank=True)
     joined_date = models.DateTimeField(
         auto_now_add=True, null=True, blank=True)
+    points = models.IntegerField(default=0)
     
     def __str__(self):
         return self.customer_id.username

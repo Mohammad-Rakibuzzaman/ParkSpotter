@@ -194,11 +194,27 @@ class UserLogoutView(APIView):
         return redirect('login')
     
 #12.5 rtzaddedd
-class ZoneAPIView(viewsets.ModelViewSet):
-    queryset = Zone.objects.all()
+
+
+class ZoneViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     serializer_class = ZoneSerializer
 
-    # permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        user = self.request.user
+
+        # Check if the user is a ParkOwner
+        if ParkOwner.objects.filter(park_owner_id=user).exists():
+            park_owner = ParkOwner.objects.get(park_owner_id=user)
+            return Zone.objects.filter(park_owner=park_owner)
+
+        # Check if the user is an Employee
+        if Employee.objects.filter(employee=user).exists():
+            employee = Employee.objects.get(employee=user)
+            return Zone.objects.filter(park_owner=employee.park_owner_id)
+
+        return Zone.objects.none()
+
 
 class SlotAPIView(viewsets.ModelViewSet):
     queryset = Slot.objects.all()
