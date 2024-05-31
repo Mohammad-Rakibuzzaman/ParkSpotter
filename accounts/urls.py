@@ -13,6 +13,8 @@ router.register(
     'subscription', views.SubscriptionViewSet, basename='subscription')
 router.register('park_owner_dashboard',
                 views.ParkOwnerDashboardViewSet, basename='park_owner_dashboard')
+router.register('admin_dashboard',
+                views.AdminDashboardViewSet, basename='admin_dashboard')
 urlpatterns = [
     path('', include(router.urls)),
     path('register/', views.UserRegistrationApiView.as_view(), name='register'),
