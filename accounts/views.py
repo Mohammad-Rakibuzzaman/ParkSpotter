@@ -151,8 +151,15 @@ class UserLoginApiView(APIView):
                 is_employee = Employee.objects.filter(employee=user).exists()
                 is_customer = Customer.objects.filter(
                     customer_id=user).exists()
+                is_admin = user.is_staff  # Check if user is an admin
 
-                if is_park_owner:
+                if is_admin:
+                    return Response({
+                        'token': token.key,
+                        'user_id': user.id,
+                        'role': 'admin'
+                    })
+                elif is_park_owner:
                     return Response({
                         'token': token.key,
                         'user_id': user.id,
@@ -250,53 +257,6 @@ def nearby_parking_lots(request):
         'park_owners': park_owners,
     })
 
-
-# class ParkOwnerDashboardViewSet(viewsets.ViewSet):
-#     permission_classes = [IsAuthenticated]
-
-#     def list(self, request):
-#         user = request.user
-#         try:
-#             park_owner = ParkOwner.objects.get(park_owner_id=user)
-#         except ParkOwner.DoesNotExist:
-#             return Response({"error": "You are not a ParkOwner."}, status=status.HTTP_403_FORBIDDEN)
-
-#         # Get booking summary
-#         bookings = Booking.objects.filter(zone__park_owner=park_owner)
-#         booking_serializer = BookingSummarySerializer(bookings, many=True)
-
-#         # Get zone summary
-#         zones = Zone.objects.filter(park_owner=park_owner)
-#         zone_serializer = ZoneSummarySerializer(zones, many=True)
-
-#         employees = Employee.objects.filter(park_owner_id=park_owner)
-#         employee_serializer = EmployeeSerializer(employees, many=True)
-
-#         salaries = Salary.objects.filter(employee__in=employees)
-#         salary_serializer = SalarySerializer(salaries, many=True)
-
-#         # Total earnings
-#         total_earnings = sum(booking.total_amount for booking in bookings)
-#         total_salary_cost = sum(salary.amount for salary in salaries)
-#         net_revenue = total_earnings - total_salary_cost
-#         # Total bookings
-#         total_bookings = bookings.count()
-#         total_employees = employees.count()
-
-#         dashboard_data = {
-#             "total_earnings": total_earnings,
-#             "total_bookings": total_bookings,
-#             "employees": employee_serializer.data,
-#             "bookings": booking_serializer.data,
-#             "zones": zone_serializer.data,
-#             "total_salary_cost": total_salary_cost,
-#             "net_revenue": net_revenue,
-#             "total_employees":total_employees,
-#         }
-
-#         return Response(dashboard_data)
-
-
 class ParkOwnerDashboardViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
@@ -364,3 +324,82 @@ class ParkOwnerDashboardViewSet(viewsets.ViewSet):
         }
 
         return Response(dashboard_data)
+
+
+class AdminDashboardViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated,]
+
+    def list(self, request):
+        # Get all ParkOwners
+        park_owners = ParkOwner.objects.all()
+
+        # Filter ParkOwners with and without subscription
+        park_owners_with_subscription = park_owners.filter(
+            subscription_id__isnull=False)
+        park_owners_with_subscription_count = park_owners.filter(
+            subscription_id__isnull=False).count()
+        park_owners_without_subscription = park_owners.filter(
+            subscription_id__isnull=True)
+        park_owners_without_subscription_count = park_owners.filter(
+            subscription_id__isnull=True).count()
+
+        total_earnings = 0
+        total_salary_cost = 0
+
+        park_owners_with_subscription_data = []
+        for park_owner in park_owners_with_subscription:
+            # Calculate total earnings for the current ParkOwner
+            park_owner_bookings = Booking.objects.filter(
+                zone__park_owner=park_owner)
+            earnings = sum(
+                booking.total_amount for booking in park_owner_bookings)
+            total_earnings += earnings
+
+            # Calculate total salary cost for the current ParkOwner
+            salary_cost_aggregate = Salary.objects.filter(
+                employee__park_owner_id=park_owner).aggregate(total=Sum('amount'))
+            salary_cost = salary_cost_aggregate['total'] or 0
+            total_salary_cost += salary_cost
+
+            # Calculate net revenue for the current ParkOwner
+            park_owner_net_revenue = earnings - salary_cost
+
+            # Append data to the list
+            park_owners_with_subscription_data.append({
+                "park_owner_id": park_owner.id,
+                "username": park_owner.park_owner_id.username,
+                "total_earnings": earnings,
+                "total_salary_cost": salary_cost,
+                "park_owner_net_revenue": park_owner_net_revenue
+            })
+
+        # List of park owners without a subscription
+        park_owners_without_subscription_data = [
+            {"park_owner_id": park_owner.id,
+                "username": park_owner.park_owner_id.username}
+            for park_owner in park_owners_without_subscription
+        ]
+
+        # Calculate net revenue as the total of Subscription.amount
+        total_subscription_amount = sum(
+            subscription.amount for subscription in Subscription.objects.all())
+
+        # Calculate conversion ratio
+        total_park_owners = park_owners.count()
+        park_owners_with_subscription_count = park_owners_with_subscription.count()
+        conversion_ratio = (park_owners_with_subscription_count /
+                            total_park_owners) * 100 if total_park_owners > 0 else 0
+
+        admin_dashboard_data = {
+            "park_owners_with_subscription": park_owners_with_subscription_data,
+            "total_earnings": total_earnings,
+            "total_salary_cost": total_salary_cost,
+            "net_revenue": total_subscription_amount,
+            "conversion_ratio": conversion_ratio,
+            "park_owners_without_subscription": park_owners_without_subscription_data,
+            "park_owners_with_subscription_count":park_owners_with_subscription_count,
+            "park_owners_without_subscription_count": park_owners_without_subscription_count
+
+        }
+
+        return Response(admin_dashboard_data)
