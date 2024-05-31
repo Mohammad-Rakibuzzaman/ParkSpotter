@@ -336,12 +336,8 @@ class AdminDashboardViewSet(viewsets.ViewSet):
         # Filter ParkOwners with and without subscription
         park_owners_with_subscription = park_owners.filter(
             subscription_id__isnull=False)
-        park_owners_with_subscription_count = park_owners.filter(
-            subscription_id__isnull=False).count()
         park_owners_without_subscription = park_owners.filter(
             subscription_id__isnull=True)
-        park_owners_without_subscription_count = park_owners.filter(
-            subscription_id__isnull=True).count()
 
         total_earnings = 0
         total_salary_cost = 0
@@ -364,13 +360,23 @@ class AdminDashboardViewSet(viewsets.ViewSet):
             # Calculate net revenue for the current ParkOwner
             park_owner_net_revenue = earnings - salary_cost
 
+            # Include subscription details
+            subscription = park_owner.subscription_id
+            subscription_data = {
+                "package": subscription.get_package_display(),
+                "start_date": subscription.start_date,
+                "end_date": subscription.end_date,
+                "amount": subscription.amount
+            } if subscription else {}
+
             # Append data to the list
             park_owners_with_subscription_data.append({
                 "park_owner_id": park_owner.id,
                 "username": park_owner.park_owner_id.username,
                 "total_earnings": earnings,
                 "total_salary_cost": salary_cost,
-                "park_owner_net_revenue": park_owner_net_revenue
+                "park_owner_net_revenue": park_owner_net_revenue,
+                "subscription": subscription_data
             })
 
         # List of park owners without a subscription
@@ -392,14 +398,12 @@ class AdminDashboardViewSet(viewsets.ViewSet):
 
         admin_dashboard_data = {
             "park_owners_with_subscription": park_owners_with_subscription_data,
-            "total_earnings": total_earnings,
-            "total_salary_cost": total_salary_cost,
+            "total_earnings": total_subscription_amount,
             "net_revenue": total_subscription_amount,
             "conversion_ratio": conversion_ratio,
             "park_owners_without_subscription": park_owners_without_subscription_data,
-            "park_owners_with_subscription_count":park_owners_with_subscription_count,
-            "park_owners_without_subscription_count": park_owners_without_subscription_count
-
+            "park_owners_with_subscription_count": park_owners_with_subscription_count,
+            "park_owners_without_subscription_count": park_owners_without_subscription.count()
         }
 
         return Response(admin_dashboard_data)
