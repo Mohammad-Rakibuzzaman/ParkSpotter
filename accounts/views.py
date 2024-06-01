@@ -28,7 +28,7 @@ from rest_framework import generics
 from .models import ParkOwner, Slot, Zone, Booking, Vehicle, Subscription, Employee, Salary
 from customer.models import Customer
 from django.db.models import Q
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Create your views here.
 class ParkownerProfileViewset(viewsets.ModelViewSet):
@@ -273,6 +273,7 @@ def nearby_parking_lots(request):
         'park_owners': park_owners,
     })
 
+
 class ParkOwnerDashboardViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
@@ -300,8 +301,8 @@ class ParkOwnerDashboardViewSet(viewsets.ViewSet):
         bookings = Booking.objects.filter(zone__park_owner=park_owner)
         if start_date and end_date:
             bookings = bookings.filter(
-                booking_date__date__gte=start_date,
-                booking_date__date__lte=end_date
+                booking_time__date__gte=start_date,
+                booking_time__date__lte=end_date
             )
         booking_serializer = BookingSummarySerializer(bookings, many=True)
 
@@ -324,9 +325,55 @@ class ParkOwnerDashboardViewSet(viewsets.ViewSet):
         total_earnings = sum(booking.total_amount for booking in bookings)
         total_salary_cost = sum(salary.amount for salary in salaries)
         net_revenue = total_earnings - total_salary_cost
-        # Total bookings
+
+        # Total bookings and employees
         total_bookings = bookings.count()
         total_employees = employees.count()
+
+        # Customer details
+        park_owner_customers = Customer.objects.filter(
+            booking__zone__park_owner=park_owner).distinct()
+        customer_details = []
+        best_customer = None
+        max_booking_time = timedelta(0)
+
+        for customer in park_owner_customers:
+            customer_bookings = bookings.filter(customer=customer)
+            bookings_info = [{
+                "booking_id": booking.id,
+                "vehicle": booking.vehicle.plate_number,
+                "slot": booking.slot.slot_number,
+                "check_in_time": booking.check_in_time,
+                "check_out_time": booking.check_out_time,
+                "total_amount": booking.total_amount
+            } for booking in customer_bookings]
+
+            # Initialize total_booking_time as a timedelta object
+            total_booking_time = timedelta(0)
+
+            for booking in customer_bookings:
+                if booking.check_in_time and booking.check_out_time:
+                    total_booking_time += (booking.check_out_time -
+                                           booking.check_in_time)
+
+            if total_booking_time > max_booking_time:
+                max_booking_time = total_booking_time
+                best_customer = {
+                    "id": customer.id,
+                    "mobile_no": customer.mobile_no,
+                    "total_booking_time": max_booking_time,
+                    "total_booking_amount": sum(booking.total_amount for booking in customer_bookings),
+                }
+
+            customer_details.append({
+                "id": customer.id,
+                "mobile_no": customer.mobile_no,
+                "booking_count": customer_bookings.count(),
+                "total_booking_amount": sum(booking.total_amount for booking in customer_bookings),
+                "bookings": bookings_info
+            })
+
+        total_customers = park_owner_customers.count()
 
         dashboard_data = {
             "total_earnings": total_earnings,
@@ -337,13 +384,15 @@ class ParkOwnerDashboardViewSet(viewsets.ViewSet):
             "total_salary_cost": total_salary_cost,
             "net_revenue": net_revenue,
             "total_employees": total_employees,
+            "total_customers": total_customers,
+            "customers": customer_details,
+            "best_customer": best_customer
         }
 
         return Response(dashboard_data)
 
-
 class AdminDashboardViewSet(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated,]
+    permission_classes = [IsAuthenticated]
 
     def list(self, request):
         # Get all ParkOwners
@@ -385,6 +434,32 @@ class AdminDashboardViewSet(viewsets.ViewSet):
                 "amount": subscription.amount
             } if subscription else {}
 
+            # Calculate customer count and details
+            park_owner_customers = Customer.objects.filter(
+                booking__zone__park_owner=park_owner).distinct()
+            customer_count = park_owner_customers.count()
+
+            customer_details = []
+            for customer in park_owner_customers:
+                # Get booking information for the customer
+                customer_bookings = Booking.objects.filter(customer=customer)
+                bookings_info = [{
+                    "booking_id": booking.id,
+                    "vehicle": booking.vehicle.plate_number,
+                    "slot": booking.slot.slot_number,
+                    "check_in_time": booking.check_in_time,
+                    "check_out_time": booking.check_out_time,
+                    "total_amount": booking.total_amount
+                } for booking in customer_bookings]
+
+                customer_details.append({
+                    "id": customer.id,
+                    "mobile_no": customer.mobile_no,
+                    "booking_count": customer_bookings.count(),
+                    "total_booking_amount": sum(booking.total_amount for booking in customer_bookings),
+                    "bookings": bookings_info
+                })
+
             # Append data to the list
             park_owners_with_subscription_data.append({
                 "park_owner_id": park_owner.id,
@@ -392,7 +467,9 @@ class AdminDashboardViewSet(viewsets.ViewSet):
                 "total_earnings": earnings,
                 "total_salary_cost": salary_cost,
                 "park_owner_net_revenue": park_owner_net_revenue,
-                "subscription": subscription_data
+                "subscription": subscription_data,
+                "customer_count": customer_count,
+                "customers": customer_details
             })
 
         # List of park owners without a subscription
