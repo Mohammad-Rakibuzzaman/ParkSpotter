@@ -213,8 +213,13 @@ class ZoneViewSet(viewsets.ModelViewSet):
             employee = Employee.objects.get(employee=user)
             return Zone.objects.filter(park_owner=employee.park_owner_id)
 
-        return Zone.objects.none()
+        # Check if the user is a Customer
+        if Customer.objects.filter(customer_id=user).exists():
+            park_owner = self.request.query_params.get('park_owner')
+            if park_owner:
+                return Zone.objects.filter(park_owner=park_owner)
 
+        return Zone.objects.none()
 
 class SlotAPIView(viewsets.ModelViewSet):
     queryset = Slot.objects.all()
