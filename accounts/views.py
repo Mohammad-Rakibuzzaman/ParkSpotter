@@ -462,10 +462,10 @@ class AdminDashboardViewSet(viewsets.ViewSet):
             # Include subscription details
             subscription = park_owner.subscription_id
             subscription_data = {
-                "package": subscription.get_package_display(),
-                "start_date": subscription.start_date,
-                "end_date": subscription.end_date,
-                "amount": subscription.amount
+                "name": subscription.name,
+                "amount": subscription.amount,
+                "discount": subscription.discount,
+                "total_amount": subscription.total_amount,
             } if subscription else {}
 
             # Calculate customer count and details
