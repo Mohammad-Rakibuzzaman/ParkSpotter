@@ -2,6 +2,7 @@ from rest_framework import serializers, status
 from django.contrib.auth.models import User
 from .models import ParkOwner, Zone, Booking, Vehicle, Subscription, Employee, Slot, Salary
 from django.db.models import Q
+from datetime import timedelta, date
 
 
 class ParkownerSerializer(serializers.ModelSerializer):
@@ -300,20 +301,34 @@ class BookingSerializer(serializers.ModelSerializer):
     #         raise serializers.ValidationError("This slot is already booked.")
     #     return data
 
+
+class SubscriptionPackageAdmin(serializers.ModelSerializer):
+
+    list_display = ('name', 'duration_months', 'price', 'discount')
+
+
 class SubscriptionSerializer(serializers.ModelSerializer):
+    # Read-only field for amount
+    amount = serializers.ReadOnlyField()
+
     class Meta:
         model = Subscription
         fields = ['id', 'package', 'start_date', 'end_date', 'amount']
-
-    # Read-only field for amount
-    amount = serializers.ReadOnlyField()
-    end_date = serializers.ReadOnlyField()
+        # Exclude read-only fields when creating instances
+        extra_kwargs = {
+            'end_date': {'read_only': True},
+            'total_amount': {'read_only': True},
+        }
 
     def create(self, validated_data):
-        instance = Subscription(**validated_data)
-        instance.save()
-        return instance
+        # Calculate the end_date based on the package duration
+        package = validated_data.get('package')
+        duration_days = package.duration_days
+        end_date = validated_data['start_date'] + timedelta(days=duration_days)
+        validated_data['end_date'] = end_date
 
+        instance = Subscription.objects.create(**validated_data)
+        return instance
 
 class BookingSummarySerializer(serializers.ModelSerializer):
     class Meta:

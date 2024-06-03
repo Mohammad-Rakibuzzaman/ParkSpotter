@@ -10,51 +10,56 @@ from decimal import Decimal
 
 # Create your models here.
 
+class SubscriptionPackage(models.Model):
+    name = models.CharField(max_length=100)
+    duration_months = models.PositiveIntegerField() 
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    discount = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)  
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def duration_days(self):
+        return self.duration_months * 31
+    
 class Subscription(models.Model):
-    package = models.IntegerField(choices=PACKAGE, default=1)
+    package = models.ForeignKey(SubscriptionPackage, on_delete=models.CASCADE,null=True,blank=True)
     start_date = models.DateField(auto_now_add=True)
-    end_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
 
     @property
     def amount(self):
-        if self.package == 1:
-            return 1000
-        elif self.package == 2:
-            return 5000
-        elif self.package == 3:
-            return 10000
-        else:
-            return 0
+        """Return the price without discount."""
+        return self.package.price
+
+    @property
+    def total_amount(self):
+        """Return the price with the discount applied."""
+        discount_amount = (self.package.discount / 100) * self.package.price
+        return self.package.price - discount_amount
 
     def save(self, *args, **kwargs):
-        if self.package == 1:
-            duration = timedelta(days=30)
-        elif self.package == 2:
-            duration = timedelta(days=182)
-        elif self.package == 3:
-            duration = timedelta(days=365)
+        if not self.pk:
+            self.end_date = date.today() + timedelta(days=self.package.duration_days)
         else:
-            raise ValueError("Invalid package type")
-
-        if self.pk is not None:
             existing = Subscription.objects.get(pk=self.pk)
             if existing.end_date > date.today():
                 remaining_days = (existing.end_date - date.today()).days
-                duration += timedelta(days=remaining_days)
-
-        self.end_date = date.today() + duration
+                self.end_date = date.today() + timedelta(days=remaining_days + self.package.duration_days)
+            else:
+                self.end_date = date.today() + timedelta(days=self.package.duration_days)
 
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"({self.get_package_display()})"
-
+        return f"{self.package.name}"
 
 class ParkOwner(models.Model):
     park_owner_id = models.OneToOneField(
         User, related_name="owner", on_delete=models.CASCADE)
     subscription_id = models.ForeignKey(
-        Subscription, related_name="subscription", on_delete=models.CASCADE, null=True)
+        Subscription, related_name="subscription", on_delete=models.CASCADE, null=True,blank=True)
     image = models.ImageField(
         upload_to='media/owner_images/', blank=True, null=True)
     mobile_no = models.CharField(max_length=11)

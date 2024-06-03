@@ -100,7 +100,6 @@ def activate(request, uid64, token):
     
     if user is not None and default_token_generator.check_token(user, token):
         user.is_active = True
-        user.is_staff = True
         user.save()
         return redirect('https://development-parkspotter.netlify.app/login')
     else:
@@ -267,7 +266,13 @@ class BookingViewSet(viewsets.ModelViewSet):
     #     except Exception as e:
     #         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-class SubscriptionViewSet(viewsets.ModelViewSet):
+
+class SubscriptionPackageViewSet(viewsets.ViewSet):
+    queryset = models.SubscriptionPackage.objects.all()
+    serializer_class = serializers.SubscriptionPackageAdmin
+
+
+class SubscriptionViewSet(viewsets.ViewSet):
     queryset = Subscription.objects.all()
     serializer_class = SubscriptionSerializer
 
