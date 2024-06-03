@@ -6,7 +6,7 @@ from rest_framework.decorators import action
 from django.utils import timezone
 from django.db.models import Sum
 #12-5 added by rtz
-from .serializers import SlotSerializer, ZoneSerializer, BookingSerializer, VehicleSerializer, SubscriptionSerializer, SalarySerializer, SalaryPaymentSerializer, BookingSummarySerializer, ZoneSummarySerializer, EmployeeSerializer
+from .serializers import SlotSerializer, ZoneSerializer, BookingSerializer, VehicleSerializer,SalarySerializer, SalaryPaymentSerializer, BookingSummarySerializer, ZoneSummarySerializer, EmployeeSerializer, SubscriptionPackageSerializer
 from rest_framework.permissions import IsAuthenticated
 
 from rest_framework import status
@@ -25,7 +25,7 @@ from django.shortcuts import redirect
 from django.contrib.sites.shortcuts import get_current_site
 from rest_framework import generics
 #rtz added 12-5
-from .models import ParkOwner, Slot, Zone, Booking, Vehicle, Subscription, Employee, Salary
+from .models import ParkOwner, Slot, Zone, Booking, Vehicle, Employee, Salary,SubscriptionPackage
 from customer.models import Customer
 from django.db.models import Q
 from datetime import datetime, timedelta
@@ -267,14 +267,14 @@ class BookingViewSet(viewsets.ModelViewSet):
     #         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class SubscriptionPackageViewSet(viewsets.ViewSet):
-    queryset = models.SubscriptionPackage.objects.all()
-    serializer_class = serializers.SubscriptionPackageAdmin
+class SubscriptionPackageViewSet(viewsets.ModelViewSet):
+    queryset = SubscriptionPackage.objects.all()
+    serializer_class = SubscriptionPackageSerializer
 
 
-class SubscriptionViewSet(viewsets.ViewSet):
-    queryset = Subscription.objects.all()
-    serializer_class = SubscriptionSerializer
+# class SubscriptionViewSet(viewsets.ModelViewSet):
+#     queryset = Subscription.objects.all()
+#     serializer_class = SubscriptionSerializer
 
 
 def nearby_parking_lots(request):
@@ -491,7 +491,7 @@ class AdminDashboardViewSet(viewsets.ViewSet):
 
         # Calculate net revenue as the total of Subscription.amount
         total_subscription_amount = sum(
-            subscription.amount for subscription in Subscription.objects.all())
+            subscription.amount for subscription in SubscriptionPackage.objects.all())
 
         # Calculate conversion ratio
         total_park_owners = park_owners.count()
