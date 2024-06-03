@@ -10,7 +10,9 @@ router.register('slot', views.SlotAPIView, basename='slot')
 router.register('salary', views.SalaryViewSet, basename='salary')
 router.register('bookings', views.BookingViewSet, basename='booking')
 router.register(
-    'subscription', views.SubscriptionViewSet, basename='subscription')
+    'subscription_package', views.SubscriptionPackageViewSet, basename='subscription_package')
+# router.register(
+#     'subscription', views.SubscriptionViewSet, basename='subscription')
 router.register('park_owner_dashboard',
                 views.ParkOwnerDashboardViewSet, basename='park_owner_dashboard')
 router.register('admin_dashboard',
