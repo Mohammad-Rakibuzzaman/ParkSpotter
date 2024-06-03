@@ -385,6 +385,29 @@ class ParkOwnerDashboardViewSet(viewsets.ViewSet):
 
         total_customers = park_owner_customers.count()
 
+        # Employee-based booking details
+        employee_details = []
+        for employee in employees:
+            employee_bookings = bookings.filter(employee=employee)
+            employee_booking_count = employee_bookings.count()
+            employee_total_amount = sum(
+                booking.total_amount for booking in employee_bookings)
+            employee_bookings_info = [{
+                "booking_id": booking.id,
+                "vehicle": booking.vehicle.plate_number,
+                "slot": booking.slot.slot_number,
+                "check_in_time": booking.check_in_time,
+                "check_out_time": booking.check_out_time,
+                "total_amount": booking.total_amount
+            } for booking in employee_bookings]
+
+            employee_details.append({
+                "id": employee.id,
+                "booking_count": employee_booking_count,
+                "total_booking_amount": employee_total_amount,
+                "bookings": employee_bookings_info
+            })
+
         dashboard_data = {
             "total_earnings": total_earnings,
             "total_bookings": total_bookings,
@@ -396,7 +419,8 @@ class ParkOwnerDashboardViewSet(viewsets.ViewSet):
             "total_employees": total_employees,
             "total_customers": total_customers,
             "customers": customer_details,
-            "best_customer": best_customer
+            "best_customer": best_customer,
+            "employee_details": employee_details
         }
 
         return Response(dashboard_data)
