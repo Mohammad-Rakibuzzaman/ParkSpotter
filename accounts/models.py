@@ -10,51 +10,59 @@ from decimal import Decimal
 
 # Create your models here.
 
-class Subscription(models.Model):
-    package = models.IntegerField(choices=PACKAGE, default=1)
-    start_date = models.DateField(auto_now_add=True)
-    end_date = models.DateField()
 
-    @property
-    def amount(self):
-        if self.package == 1:
-            return 1000
-        elif self.package == 2:
-            return 5000
-        elif self.package == 3:
-            return 10000
-        else:
-            return 0
+class SubscriptionPackage(models.Model):
+    name = models.CharField(max_length=100)
+    duration_months = models.PositiveIntegerField()
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    discount = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
+    amount = models.DecimalField(
+        max_digits=10, decimal_places=2, editable=False,null=True,blank=True)
+    total_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, editable=False, null=True, blank=True)
+
+    def __str__(self):
+        return self.name
 
     def save(self, *args, **kwargs):
-        if self.package == 1:
-            duration = timedelta(days=30)
-        elif self.package == 2:
-            duration = timedelta(days=182)
-        elif self.package == 3:
-            duration = timedelta(days=365)
-        else:
-            raise ValueError("Invalid package type")
-
-        if self.pk is not None:
-            existing = Subscription.objects.get(pk=self.pk)
-            if existing.end_date > date.today():
-                remaining_days = (existing.end_date - date.today()).days
-                duration += timedelta(days=remaining_days)
-
-        self.end_date = date.today() + duration
+        # Calculate amount
+        self.amount = self.price
+        # Calculate total_amount
+        discount_amount = (self.discount / 100) * self.price
+        self.total_amount = self.price - discount_amount
 
         super().save(*args, **kwargs)
 
-    def __str__(self):
-        return f"({self.get_package_display()})"
+    @property
+    def duration_days(self):
+        return self.duration_months * 31
+    
+# class Subscription(models.Model):
+#     package = models.ForeignKey(SubscriptionPackage, on_delete=models.CASCADE,null=True,blank=True)
+#     start_date = models.DateField(auto_now_add=True)
+#     end_date = models.DateField(null=True, blank=True)
+    
+#     def save(self, *args, **kwargs):
+#         if not self.pk:
+#             self.end_date = date.today() + timedelta(days=self.package.duration_days)
+#         else:
+#             existing = Subscription.objects.get(pk=self.pk)
+#             if existing.end_date > date.today():
+#                 remaining_days = (existing.end_date - date.today()).days
+#                 self.end_date = date.today() + timedelta(days=remaining_days + self.package.duration_days)
+#             else:
+#                 self.end_date = date.today() + timedelta(days=self.package.duration_days)
 
+#         super().save(*args, **kwargs)
+
+#     def __str__(self):
+#         return f"{self.package.name}"
 
 class ParkOwner(models.Model):
     park_owner_id = models.OneToOneField(
         User, related_name="owner", on_delete=models.CASCADE)
     subscription_id = models.ForeignKey(
-        Subscription, related_name="subscription", on_delete=models.CASCADE, null=True)
+        SubscriptionPackage, related_name="subscription", on_delete=models.CASCADE, null=True, blank=True)
     image = models.ImageField(
         upload_to='media/owner_images/', blank=True, null=True)
     mobile_no = models.CharField(max_length=11)
@@ -74,7 +82,20 @@ class ParkOwner(models.Model):
     longitude = models.DecimalField(
         max_digits=9, decimal_places=6, null=True, blank=True)
     available_slot = models.PositiveIntegerField(default=0)
+    subscription_start_date = models.DateField(null=True, blank=True)
+    subscription_end_date = models.DateField(null=True, blank=True)
     
+    def save(self, *args, **kwargs):
+        if not self.subscription_id:
+            self.subscription_start_date = None
+            self.subscription_end_date = None
+        else:
+            if not self.subscription_start_date:
+                self.subscription_start_date = date.today()
+            self.subscription_end_date = self.subscription_start_date + \
+                timedelta(days=self.subscription_id.duration_days)
+        super().save(*args, **kwargs)
+
     def update_capacity(self):
         total_capacity = self.park_zones.aggregate(
             total=Sum('capacity'))['total'] or 0

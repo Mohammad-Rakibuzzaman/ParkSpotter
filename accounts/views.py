@@ -6,7 +6,7 @@ from rest_framework.decorators import action
 from django.utils import timezone
 from django.db.models import Sum
 #12-5 added by rtz
-from .serializers import SlotSerializer, ZoneSerializer, BookingSerializer, VehicleSerializer, SubscriptionSerializer, SalarySerializer, SalaryPaymentSerializer, BookingSummarySerializer, ZoneSummarySerializer, EmployeeSerializer
+from .serializers import SlotSerializer, ZoneSerializer, BookingSerializer, VehicleSerializer,SalarySerializer, SalaryPaymentSerializer, BookingSummarySerializer, ZoneSummarySerializer, EmployeeSerializer, SubscriptionPackageSerializer
 from rest_framework.permissions import IsAuthenticated
 
 from rest_framework import status
@@ -25,7 +25,7 @@ from django.shortcuts import redirect
 from django.contrib.sites.shortcuts import get_current_site
 from rest_framework import generics
 #rtz added 12-5
-from .models import ParkOwner, Slot, Zone, Booking, Vehicle, Subscription, Employee, Salary
+from .models import ParkOwner, Slot, Zone, Booking, Vehicle, Employee, Salary,SubscriptionPackage
 from customer.models import Customer
 from django.db.models import Q
 from datetime import datetime, timedelta
@@ -100,7 +100,6 @@ def activate(request, uid64, token):
     
     if user is not None and default_token_generator.check_token(user, token):
         user.is_active = True
-        user.is_staff = True
         user.save()
         return redirect('https://development-parkspotter.netlify.app/login')
     else:
@@ -267,9 +266,15 @@ class BookingViewSet(viewsets.ModelViewSet):
     #     except Exception as e:
     #         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-class SubscriptionViewSet(viewsets.ModelViewSet):
-    queryset = Subscription.objects.all()
-    serializer_class = SubscriptionSerializer
+
+class SubscriptionPackageViewSet(viewsets.ModelViewSet):
+    queryset = SubscriptionPackage.objects.all()
+    serializer_class = SubscriptionPackageSerializer
+
+
+# class SubscriptionViewSet(viewsets.ModelViewSet):
+#     queryset = Subscription.objects.all()
+#     serializer_class = SubscriptionSerializer
 
 
 def nearby_parking_lots(request):
@@ -380,6 +385,29 @@ class ParkOwnerDashboardViewSet(viewsets.ViewSet):
 
         total_customers = park_owner_customers.count()
 
+        # Employee-based booking details
+        employee_details = []
+        for employee in employees:
+            employee_bookings = bookings.filter(employee=employee)
+            employee_booking_count = employee_bookings.count()
+            employee_total_amount = sum(
+                booking.total_amount for booking in employee_bookings)
+            employee_bookings_info = [{
+                "booking_id": booking.id,
+                "vehicle": booking.vehicle.plate_number,
+                "slot": booking.slot.slot_number,
+                "check_in_time": booking.check_in_time,
+                "check_out_time": booking.check_out_time,
+                "total_amount": booking.total_amount
+            } for booking in employee_bookings]
+
+            employee_details.append({
+                "id": employee.id,
+                "booking_count": employee_booking_count,
+                "total_booking_amount": employee_total_amount,
+                "bookings": employee_bookings_info
+            })
+
         dashboard_data = {
             "total_earnings": total_earnings,
             "total_bookings": total_bookings,
@@ -391,7 +419,8 @@ class ParkOwnerDashboardViewSet(viewsets.ViewSet):
             "total_employees": total_employees,
             "total_customers": total_customers,
             "customers": customer_details,
-            "best_customer": best_customer
+            "best_customer": best_customer,
+            "employee_details": employee_details
         }
 
         return Response(dashboard_data)
@@ -486,7 +515,7 @@ class AdminDashboardViewSet(viewsets.ViewSet):
 
         # Calculate net revenue as the total of Subscription.amount
         total_subscription_amount = sum(
-            subscription.amount for subscription in Subscription.objects.all())
+            subscription.amount for subscription in SubscriptionPackage.objects.all())
 
         # Calculate conversion ratio
         total_park_owners = park_owners.count()
