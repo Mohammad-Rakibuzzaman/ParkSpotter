@@ -144,7 +144,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = ParkOwner
         fields = ['username', 'first_name', 'last_name', 'mobile_no',
-                  'nid_card_no', 'email', 'password', 'confirm_password', 'slot_size', 'capacity', 'address', 'area', 'payment_method', 'amount', 'payment_date', 'image']
+                  'nid_card_no', 'email', 'password', 'confirm_password', 'slot_size', 'capacity', 'address', 'area', 'payment_method', 'amount', 'payment_date', 'image','subscription_id']
 
     def save(self):
         username = self.validated_data['username']
@@ -162,6 +162,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
         payment_method = self.validated_data['payment_method']
         amount = self.validated_data['amount']
         payment_date = self.validated_data['payment_date']
+        subscription_id = self.validated_data['subscription_id']
         image = self.validated_data.get('image', None)
 
         if password != password2:
@@ -182,7 +183,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
         user.is_active = False
         user.save()
         ParkOwner.objects.create(park_owner_id=user, mobile_no=mobile_no,
-                                 id=user.id, nid_card_no=nid_card_no, address=address, slot_size=slot_size, capacity=capacity, area=area, payment_method=payment_method, payment_date=payment_date, image=image, amount=amount)
+                                 id=user.id, nid_card_no=nid_card_no, address=address, slot_size=slot_size, capacity=capacity, area=area, payment_method=payment_method, payment_date=payment_date, image=image, amount=amount, subscription_id=subscription_id)
 
         return user
 
