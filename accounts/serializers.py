@@ -1,20 +1,22 @@
 from rest_framework import serializers, status
 from django.contrib.auth.models import User
-from .models import ParkOwner, Zone, Booking, Vehicle, Subscription, Employee,Slot
+from .models import ParkOwner, Zone, Booking, Vehicle,Employee, Slot, Salary, SubscriptionPackage
+from django.db.models import Q
+from datetime import timedelta, date
 
 
 class ParkownerSerializer(serializers.ModelSerializer):
     class Meta:
         model = ParkOwner
         fields = '__all__'
-class ParkownerDetailsSerializer(serializers.ModelSerializer):
+class UserDetailsSerializer(serializers.ModelSerializer):
     username = serializers.CharField(read_only=True)
     class Meta:
         model = User
         fields = ['id','username','email', 'first_name', 'last_name']
 
 class ParkownerProfileSerializer(serializers.ModelSerializer):
-    park_owner_id = ParkownerDetailsSerializer()
+    park_owner_id = UserDetailsSerializer()
     class Meta:
         model = ParkOwner
         fields = '__all__'
@@ -33,9 +35,40 @@ class ParkownerProfileSerializer(serializers.ModelSerializer):
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
+    employee = UserDetailsSerializer()
     class Meta:
         model = Employee
         fields = '__all__'
+        
+
+class SalarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Salary
+        fields = ['id', 'employee', 'amount', 'is_paid',
+                  'payment_date', 'effective_from', 'effective_to']
+        read_only_fields = ['payment_date', 'is_paid']
+
+
+class SalaryPaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Salary
+        fields = ['id','effective_from', 'effective_to']
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('employee', {})
+        user_instance = instance.employee
+
+        
+        for attr, value in user_data.items():
+            setattr(user_instance, attr, value)
+        user_instance.save()
+
+        
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        return instance
 
 class EmployeeRegistrationSerializer(serializers.ModelSerializer):
     mobile_no = serializers.CharField(write_only=True, required=True)
@@ -45,7 +78,7 @@ class EmployeeRegistrationSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(write_only=True, required=True)
     last_name = serializers.CharField(write_only=True, required=True)
     email = serializers.CharField(write_only=True, required=True)
-    joined_date = serializers.DateTimeField(write_only=True, required=True)
+    joined_date = serializers.DateTimeField(write_only=True, required=False)
     class Meta:
         model = Employee
         fields = ['username', 'first_name', 'last_name','qualification', 'mobile_no',
@@ -70,6 +103,8 @@ class EmployeeRegistrationSerializer(serializers.ModelSerializer):
         if password != password2:
             raise serializers.ValidationError(
                 {'error': "Password Doesn't Matched"})
+        if User.objects.filter(username=username).exists():
+            raise serializers.ValidationError({'error': "Username already exists"})
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError(
                 {'error': "Email Already exists"})
@@ -87,7 +122,7 @@ class EmployeeRegistrationSerializer(serializers.ModelSerializer):
         employee = User(username=username, email=email,
                     first_name=first_name, last_name=last_name)
         employee.set_password(password)
-        employee.is_active = False
+        employee.is_active = True
         employee.save()
         Employee.objects.create(employee=employee, mobile_no=mobile_no,
                                  id=employee.id, nid_card_no=nid_card_no, address=address, qualification=qualification, joined_date=joined_date, park_owner_id= park_owner)
@@ -109,7 +144,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = ParkOwner
         fields = ['username', 'first_name', 'last_name', 'mobile_no',
-                  'nid_card_no', 'email', 'password', 'confirm_password', 'slot_size', 'capacity', 'address', 'area', 'payment_method', 'amount', 'payment_date', 'image']
+                  'nid_card_no', 'email', 'password', 'confirm_password', 'slot_size', 'capacity', 'address', 'area', 'payment_method', 'amount', 'payment_date', 'image','subscription_id']
 
     def save(self):
         username = self.validated_data['username']
@@ -127,6 +162,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
         payment_method = self.validated_data['payment_method']
         amount = self.validated_data['amount']
         payment_date = self.validated_data['payment_date']
+        subscription_id = self.validated_data['subscription_id']
         image = self.validated_data.get('image', None)
 
         if password != password2:
@@ -147,42 +183,43 @@ class RegistrationSerializer(serializers.ModelSerializer):
         user.is_active = False
         user.save()
         ParkOwner.objects.create(park_owner_id=user, mobile_no=mobile_no,
-                                 id=user.id, nid_card_no=nid_card_no, address=address, slot_size=slot_size, capacity=capacity, area=area, payment_method=payment_method, payment_date=payment_date, image=image, amount=amount)
+                                 id=user.id, nid_card_no=nid_card_no, address=address, slot_size=slot_size, capacity=capacity, area=area, payment_method=payment_method, payment_date=payment_date, image=image, amount=amount, subscription_id=subscription_id)
 
         return user
 
 
 class UserLoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
+    login = serializers.CharField()
     password = serializers.CharField()
 
     def validate(self, data):
-        username = data.get('username')
+        login = data.get('login')
         password = data.get('password')
 
-        if username and password:
-            user = User.objects.filter(username=username).first()
+        if login and password:
+            user = User.objects.filter(
+                Q(username=login) | Q(email=login) | Q(
+                    customer__mobile_no=login)
+            ).first()
 
             if user and user.check_password(password):
                 return data
             else:
                 raise serializers.ValidationError(
-                    "Incorrect username or password.",
-                    code='invalid_credentials',
-                    status_code=status.HTTP_401_UNAUTHORIZED
+                    "Incorrect login or password.",
+                    code='invalid_credentials'
                 )
         else:
             raise serializers.ValidationError(
-                "Both username and password are required.",
-                code='missing_credentials',
-                status_code=status.HTTP_400_BAD_REQUEST
+                "Both login and password are required.",
+                code='missing_credentials'
             )
 
 
 class ZoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = Zone
-        fields = ['park_owner', 'name', 'capacity', 'created_at']
+        fields = ['id','park_owner', 'name', 'capacity', 'created_at']
 
 
 class VehicleSerializer(serializers.ModelSerializer):
@@ -201,50 +238,122 @@ class BookingSerializer(serializers.ModelSerializer):
     vehicle = VehicleSerializer()
     ticket_no = serializers.SerializerMethodField()
     amount = serializers.ReadOnlyField()
+    total_amount = serializers.ReadOnlyField()
 
     class Meta:
         model = Booking
-        fields = ['zone', 'slot', 'time_slot', 'vehicle', 'ticket_no',
-                  'amount', 'fine', 'check_in_time', 'check_out_time']
-        read_only_fields = ['ticket_no', 'slot']
+        fields = ['id','employee','customer','zone', 'slot', 'vehicle', 'ticket_no',
+                  'amount', 'fine', 'check_in_time', 'check_out_time', 'rate_per_minute', 'booking_time', 'appoximate_check_out_time', 'total_amount','is_paid']
+        read_only_fields = ['ticket_no', 'rate_per_minute', 'fine', 'is_paid']
 
-    def get_ticket_no(self, obj):
-        return obj.ticket_no()
+    def get_ticket_no(self, instance):
+        return instance.ticket_no()
 
     def create(self, validated_data):
         vehicle_data = validated_data.pop('vehicle')
-        vehicle = Vehicle.objects.create(**vehicle_data)
-
-        # Create the booking instance
-        booking = Booking(vehicle=vehicle, **validated_data, status=True)
-
-        # Assign the slot before saving
-        booking.slot = booking.find_next_available_slot()
-        if booking.slot is None:
-            raise serializers.ValidationError(
-                "No available slots in the selected zone.")
-
-        booking.save()
-        return booking
-
-    def validate(self, data):
-        # Check if the selected slot is already booked
-        slot = data.get('slot')
-        if slot and Booking.objects.filter(slot=slot, status=True).exists():
-            raise serializers.ValidationError("This slot is already booked.")
-        return data
-
-
-class SubscriptionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Subscription
-        fields = ['id', 'package', 'start_date', 'end_date', 'amount']
-
-    # Read-only field for amount
-    amount = serializers.ReadOnlyField()
-    end_date = serializers.ReadOnlyField()
-
-    def create(self, validated_data):
-        instance = Subscription(**validated_data)
+        vehicle_instance = Vehicle.objects.create(**vehicle_data)
+        booking_instance = Booking.objects.create(vehicle=vehicle_instance, **validated_data)
+        return booking_instance
+    
+    def update(self, instance, validated_data):
+        vehicle_data = validated_data.pop('vehicle', None)
+        if vehicle_data:
+            # Update the nested vehicle instance
+            vehicle_instance = instance.vehicle
+            for attr, value in vehicle_data.items():
+                setattr(vehicle_instance, attr, value)
+            vehicle_instance.save()
+        
+        # Update Booking instance
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
         instance.save()
+        
         return instance
+
+    #     model = Booking
+    #     fields = ['zone', 'slot', 'time_slot', 'vehicle', 'ticket_no',
+    #               'amount', 'fine', 'check_in_time', 'check_out_time']
+    #     read_only_fields = ['ticket_no', 'slot']
+
+    # def get_ticket_no(self, obj):
+    #     return obj.ticket_no()
+
+    # def create(self, validated_data):
+    #     vehicle_data = validated_data.pop('vehicle')
+    #     vehicle = Vehicle.objects.create(**vehicle_data)
+
+    #     # Create the booking instance
+    #     booking = Booking(vehicle=vehicle, **validated_data, status=True)
+
+    #     # Assign the slot before saving
+    #     booking.slot = booking.find_next_available_slot()
+    #     if booking.slot is None:
+    #         raise serializers.ValidationError(
+    #             "No available slots in the selected zone.")
+
+    #     booking.save()
+    #     return booking
+
+    # def validate(self, data):
+    #     # Check if the selected slot is already booked
+    #     slot = data.get('slot')
+    #     if slot and Booking.objects.filter(slot=slot, status=True).exists():
+    #         raise serializers.ValidationError("This slot is already booked.")
+    #     return data
+
+
+class SubscriptionPackageSerializer(serializers.ModelSerializer):
+    amount = serializers.SerializerMethodField()
+    total_amount = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SubscriptionPackage
+        fields = ['id','name', 'duration_months', 'price',
+                  'discount', 'amount', 'total_amount']
+
+    def get_amount(self, obj):
+        """Return the price without discount."""
+        return obj.price
+
+    def get_total_amount(self, obj):
+        """Return the price with the discount applied."""
+        discount_amount = (obj.discount / 100) * obj.price
+        return obj.price - discount_amount
+
+# class SubscriptionSerializer(serializers.ModelSerializer):
+#     # Read-only field for amount
+    
+#     class Meta:
+#         model = Subscription
+#         fields = ['id', 'package', 'start_date', 'end_date']
+#         # Exclude read-only fields when creating instances
+#         extra_kwargs = {
+#             'end_date': {'read_only': True},
+#         }
+
+#     def create(self, validated_data):
+#         # Calculate the end_date based on the package duration
+#         package = validated_data.get('package')
+#         duration_days = package.duration_days
+#         end_date = validated_data['start_date'] + timedelta(days=duration_days)
+#         validated_data['end_date'] = end_date
+
+#         instance = Subscription.objects.create(**validated_data)
+#         return instance
+
+class BookingSummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Booking
+        fields = ['id', 'total_amount', 'check_in_time', 'check_out_time','fine']
+
+
+class ZoneSummarySerializer(serializers.ModelSerializer):
+    available_slots = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Zone
+        fields = ['id', 'name', 'capacity', 'available_slots']
+
+    def get_available_slots(self, obj):
+        return Slot.objects.filter(zone=obj, available=True).count()
