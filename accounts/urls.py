@@ -26,6 +26,10 @@ urlpatterns = [
     path('profile/<int:park_owner_id__id>/', views.ParkownerProfileUpdateView.as_view(), name='parkowner-profile-update'),
     path('logout/', views.UserLogoutView.as_view(), name='logout'),
     path('nearby-parking-lots/', views.nearby_parking_lots, name='nearby_parking_lots'),
+    path('parkowner_activation/<int:pk>/activate/',
+         views.ParkOwnerActivationViewSet.as_view({'post': 'activate'}), name='parkowner-activate'),
+    path('parkowner_activation/<int:pk>/deactivate/',
+         views.ParkOwnerActivationViewSet.as_view({'post': 'deactivate'}), name='parkowner-deactivate'),
     #added rtz 12/5
     # path('zone/', views.ZoneAPIView.as_view(), name='zone'),
     # path('bookings/', views.BookingCreateAPIView.as_view(), name='booking'),
