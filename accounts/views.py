@@ -537,3 +537,33 @@ class AdminDashboardViewSet(viewsets.ViewSet):
         }
 
         return Response(admin_dashboard_data)
+
+
+class ParkOwnerActivationViewSet(viewsets.ViewSet):
+    # permission_classes = [IsAuthenticated]
+
+    @action(detail=True, methods=['post'])
+    def activate(self, request, pk=None):
+        try:
+            user = User.objects.get(pk=pk)
+            park_owner = ParkOwner.objects.get(park_owner_id=user)
+        except (User.DoesNotExist, ParkOwner.DoesNotExist):
+            return Response({"error": "Park owner does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Activate the user
+        user.is_active = True
+        user.save()
+        return Response({"message": "Park owner activated successfully."})
+
+    @action(detail=True, methods=['post'])
+    def deactivate(self, request, pk=None):
+        try:
+            user = User.objects.get(pk=pk)
+            park_owner = ParkOwner.objects.get(park_owner_id=user)
+        except (User.DoesNotExist, ParkOwner.DoesNotExist):
+            return Response({"error": "Park owner does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Deactivate the user
+        user.is_active = False
+        user.save()
+        return Response({"message": "Park owner deactivated successfully."})
