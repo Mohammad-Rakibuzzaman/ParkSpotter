@@ -45,28 +45,32 @@ class EmployeeSerializer(serializers.ModelSerializer):
         
 
 class SalarySerializer(serializers.ModelSerializer):
+    adjusted_amount = serializers.SerializerMethodField()
+
     class Meta:
         model = Salary
-        fields = ['id', 'employee', 'amount', 'is_paid',
-                  'payment_date', 'effective_from', 'effective_to']
-        read_only_fields = ['payment_date',]
+        fields = ['id', 'employee', 'amount', 'is_paid', 'payment_date',
+                  'effective_from', 'effective_to', 'adjusted_amount']
+        read_only_fields = ['payment_date']
+
+    def get_adjusted_amount(self, obj):
+        return obj.adjusted_amount()
 
 
 class SalaryPaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Salary
-        fields = ['id', 'effective_from', 'effective_to', 'is_paid']
+        fields = ['id', 'effective_from', 'effective_to',
+                  'is_paid', 'adjusted_amount']
 
     def update(self, instance, validated_data):
         user_data = validated_data.pop('employee', {})
         user_instance = instance.employee
 
-        
         for attr, value in user_data.items():
             setattr(user_instance, attr, value)
         user_instance.save()
 
-        
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()

@@ -139,6 +139,14 @@ class Salary(models.Model):
 
     def __str__(self):
         return f"Employee: {self.employee.employee.username}"
+    
+    def adjusted_amount(self):
+        if not self.effective_from or not self.effective_to:
+            return self.amount
+        duration_days = (self.effective_to - self.effective_from).days
+        duration_months = Decimal(duration_days) / Decimal(30)
+        adjusted_salary = self.amount * duration_months
+        return adjusted_salary
 
 class Zone(models.Model):
     park_owner = models.ForeignKey(
