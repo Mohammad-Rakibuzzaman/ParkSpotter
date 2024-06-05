@@ -25,10 +25,13 @@ class ParkownerProfileSerializer(serializers.ModelSerializer):
         user_serializer = self.fields['park_owner_id']
         user_instance = instance.park_owner_id
         user_instance = user_serializer.update(user_instance, user_data)
-        
         instance.image = validated_data.get('image', instance.image)
         instance.mobile_no = validated_data.get('mobile_no', instance.mobile_no)
         instance.address = validated_data.get('address', instance.address)
+        instance.area = validated_data.get('area', instance.area)
+        instance.latitude = validated_data.get('latitude', instance.latitude)
+        instance.longitude = validated_data.get(
+            'longitude', instance.longitude)
         
         instance.save()
         return instance
@@ -46,13 +49,13 @@ class SalarySerializer(serializers.ModelSerializer):
         model = Salary
         fields = ['id', 'employee', 'amount', 'is_paid',
                   'payment_date', 'effective_from', 'effective_to']
-        read_only_fields = ['payment_date', 'is_paid']
+        read_only_fields = ['payment_date',]
 
 
 class SalaryPaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Salary
-        fields = ['id','effective_from', 'effective_to']
+        fields = ['id', 'effective_from', 'effective_to', 'is_paid']
 
     def update(self, instance, validated_data):
         user_data = validated_data.pop('employee', {})
