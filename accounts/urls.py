@@ -5,14 +5,19 @@ router = DefaultRouter()
 
 router.register('parkowner-list', views.ParkownerProfileViewset)
 router.register('employee-list', views.EmployeeProfileViewset)
-router.register('zone', views.ZoneAPIView, basename='zone')
+router.register('zone', views.ZoneViewSet, basename='zone')
 router.register('slot', views.SlotAPIView, basename='slot')
 router.register('salary', views.SalaryViewSet, basename='salary')
 router.register('bookings', views.BookingViewSet, basename='booking')
 router.register(
-    'subscription', views.SubscriptionViewSet, basename='subscription')
+    'subscription_package', views.SubscriptionPackageViewSet, basename='subscription_package')
+# router.register(
+#     'subscription', views.SubscriptionViewSet, basename='subscription')
 router.register('park_owner_dashboard',
                 views.ParkOwnerDashboardViewSet, basename='park_owner_dashboard')
+router.register('admin_dashboard',
+                views.AdminDashboardViewSet, basename='admin_dashboard')
+
 urlpatterns = [
     path('', include(router.urls)),
     path('register/', views.UserRegistrationApiView.as_view(), name='register'),
@@ -22,6 +27,10 @@ urlpatterns = [
     path('profile/<int:park_owner_id__id>/', views.ParkownerProfileUpdateView.as_view(), name='parkowner-profile-update'),
     path('logout/', views.UserLogoutView.as_view(), name='logout'),
     path('nearby-parking-lots/', views.nearby_parking_lots, name='nearby_parking_lots'),
+    path('user_activation/<int:pk>/activate/',
+         views.UserActivationViewSet.as_view({'post': 'activate'}), name='user-activate'),
+    path('user_activation/<int:pk>/deactivate/',
+         views.UserActivationViewSet.as_view({'post': 'deactivate'}), name='user-deactivate'),
     #added rtz 12/5
     # path('zone/', views.ZoneAPIView.as_view(), name='zone'),
     # path('bookings/', views.BookingCreateAPIView.as_view(), name='booking'),

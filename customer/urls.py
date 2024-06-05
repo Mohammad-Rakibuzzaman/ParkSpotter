@@ -4,6 +4,8 @@ from . import views
 router = DefaultRouter()
 
 router.register('customer-list', views.CustomerListViewset)
+router.register('customer_dashboard', views.CustomerDashboardViewSet,
+                basename='customer_dashboard')
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -11,3 +13,4 @@ urlpatterns = [
          name='customer_register'),
 
 ]
+
