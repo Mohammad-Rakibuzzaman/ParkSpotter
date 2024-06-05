@@ -539,31 +539,66 @@ class AdminDashboardViewSet(viewsets.ViewSet):
         return Response(admin_dashboard_data)
 
 
-class ParkOwnerActivationViewSet(viewsets.ViewSet):
-    # permission_classes = [IsAuthenticated]
+class UserActivationViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
 
     @action(detail=True, methods=['post'])
     def activate(self, request, pk=None):
+        user_type = request.data.get('user_type')
         try:
             user = User.objects.get(pk=pk)
-            park_owner = ParkOwner.objects.get(park_owner_id=user)
-        except (User.DoesNotExist, ParkOwner.DoesNotExist):
-            return Response({"error": "Park owner does not exist."}, status=status.HTTP_404_NOT_FOUND)
-
-        # Activate the user
-        user.is_active = True
-        user.save()
-        return Response({"message": "Park owner activated successfully."})
+            if user_type == 'park_owner':
+                park_owner = ParkOwner.objects.get(park_owner_id=user)
+                # Activate the park owner
+                user.is_active = True
+                user.save()
+                return Response({"message": "Park owner activated successfully."})
+            elif user_type == 'customer':
+                customer = Customer.objects.get(customer_id=user)
+                # Activate the customer
+                user.is_active = True
+                user.save()
+                return Response({"message": "Customer activated successfully."})
+            elif user_type == 'employee':
+                employee = Employee.objects.get(employee=user)
+                # Activate the employee
+                user.is_active = True
+                user.save()
+                return Response({"message": "Employee activated successfully."})
+            else:
+                return Response({"error": "Invalid user type."}, status=status.HTTP_400_BAD_REQUEST)
+        except (User.DoesNotExist, ParkOwner.DoesNotExist, Customer.DoesNotExist, Employee.DoesNotExist):
+            return Response({"error": "User does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=True, methods=['post'])
     def deactivate(self, request, pk=None):
+        user_type = request.data.get('user_type')
         try:
             user = User.objects.get(pk=pk)
-            park_owner = ParkOwner.objects.get(park_owner_id=user)
-        except (User.DoesNotExist, ParkOwner.DoesNotExist):
-            return Response({"error": "Park owner does not exist."}, status=status.HTTP_404_NOT_FOUND)
+            if user_type == 'park_owner':
+                park_owner = ParkOwner.objects.get(park_owner_id=user)
+                # Deactivate the park owner
+                user.is_active = False
+                user.save()
+                return Response({"message": "Park owner deactivated successfully."})
+            elif user_type == 'customer':
+                customer = Customer.objects.get(customer_id=user)
+                # Deactivate the customer
+                user.is_active = False
+                user.save()
+                return Response({"message": "Customer deactivated successfully."})
+            elif user_type == 'employee':
+                employee = Employee.objects.get(employee=user)
+                # Deactivate the employee
+                user.is_active = False
+                user.save()
+                return Response({"message": "Employee deactivated successfully."})
+            else:
+                return Response({"error": "Invalid user type."}, status=status.HTTP_400_BAD_REQUEST)
+        except (User.DoesNotExist, ParkOwner.DoesNotExist, Customer.DoesNotExist, Employee.DoesNotExist):
+            return Response({"error": "User does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Deactivate the user
-        user.is_active = False
-        user.save()
-        return Response({"message": "Park owner deactivated successfully."})
+
+# {
+#     "user_type": "employee"
+# }
