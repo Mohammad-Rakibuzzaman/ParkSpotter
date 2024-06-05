@@ -13,9 +13,10 @@ class UserDetailsSerializer(serializers.ModelSerializer):
     username = serializers.CharField(read_only=True)
     class Meta:
         model = User
-        fields = ['id','username','email', 'first_name', 'last_name']
+        fields = ['id','username','email', 'first_name', 'last_name','is_active']
 
 class ParkownerProfileSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source='park_owner_id.id', read_only=True)
     park_owner_id = UserDetailsSerializer()
     class Meta:
         model = ParkOwner
@@ -25,45 +26,68 @@ class ParkownerProfileSerializer(serializers.ModelSerializer):
         user_serializer = self.fields['park_owner_id']
         user_instance = instance.park_owner_id
         user_instance = user_serializer.update(user_instance, user_data)
-        
         instance.image = validated_data.get('image', instance.image)
         instance.mobile_no = validated_data.get('mobile_no', instance.mobile_no)
         instance.address = validated_data.get('address', instance.address)
+        instance.area = validated_data.get('area', instance.area)
+        instance.latitude = validated_data.get('latitude', instance.latitude)
+        instance.longitude = validated_data.get(
+            'longitude', instance.longitude)
         
         instance.save()
         return instance
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source='employee.id', read_only=True)
     employee = UserDetailsSerializer()
+    
     class Meta:
         model = Employee
         fields = '__all__'
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('employee', {})
+        user_serializer = self.fields['employee']
+        user_instance = instance.employee
+
+        for attr, value in user_data.items():
+            setattr(user_instance, attr, value)
+        user_instance.save()
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        return instance
         
 
 class SalarySerializer(serializers.ModelSerializer):
+    adjusted_amount = serializers.SerializerMethodField()
+
     class Meta:
         model = Salary
-        fields = ['id', 'employee', 'amount', 'is_paid',
-                  'payment_date', 'effective_from', 'effective_to']
-        read_only_fields = ['payment_date', 'is_paid']
+        fields = ['id', 'employee', 'amount', 'is_paid', 'payment_date',
+                  'effective_from', 'effective_to', 'adjusted_amount']
+        read_only_fields = ['payment_date']
+
+    def get_adjusted_amount(self, obj):
+        return obj.adjusted_amount()
 
 
 class SalaryPaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Salary
-        fields = ['id','effective_from', 'effective_to']
+        fields = ['id', 'effective_from', 'effective_to',
+                  'is_paid', 'adjusted_amount']
 
     def update(self, instance, validated_data):
         user_data = validated_data.pop('employee', {})
         user_instance = instance.employee
 
-        
         for attr, value in user_data.items():
             setattr(user_instance, attr, value)
         user_instance.save()
 
-        
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()

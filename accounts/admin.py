@@ -9,6 +9,12 @@ class UserProfileAdmin(admin.ModelAdmin):
     
     def last_name(self,obj):
         return obj.park_owner_id.last_name
+    def save_model(self, request, obj, form, change):
+        
+        if not obj.park_owner_id_id:
+            user = models.User.objects.get(pk=request.POST.get('park_owner_id'))
+            obj.park_owner_id = user
+        super().save_model(request, obj, form, change)
     
 class EmployeeProfileAdmin(admin.ModelAdmin):
     list_display = ['first_name','last_name','mobile_no']
@@ -18,6 +24,12 @@ class EmployeeProfileAdmin(admin.ModelAdmin):
     
     def last_name(self,obj):
         return obj.employee.last_name
+    def save_model(self, request, obj, form, change):
+        
+        if not obj.employee_id:
+            user = models.User.objects.get(pk=request.POST.get('employee'))
+            obj.employee = user
+        super().save_model(request, obj, form, change)
 
 
 class ZoneAdmin(admin.ModelAdmin):

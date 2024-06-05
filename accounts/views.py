@@ -1,3 +1,4 @@
+from django.http import Http404
 from django.shortcuts import render
 from rest_framework import viewsets
 from . import models
@@ -35,10 +36,30 @@ class ParkownerProfileViewset(viewsets.ModelViewSet):
     queryset = ParkOwner.objects.all()
     serializer_class = serializers.ParkownerProfileSerializer
 
+    def get_object(self):
+        user_id = self.kwargs.get('pk')
+        try:
+            user = User.objects.get(pk=user_id)
+            return ParkOwner.objects.get(park_owner_id=user)
+        except User.DoesNotExist:
+            raise Http404
+        except ParkOwner.DoesNotExist:
+            raise Http404
+
 
 class EmployeeProfileViewset(viewsets.ModelViewSet):
     queryset = Employee.objects.all()
     serializer_class = serializers.EmployeeSerializer
+
+    def get_object(self):
+        user_id = self.kwargs.get('pk')
+        try:
+            user = User.objects.get(pk=user_id)
+            return Employee.objects.get(employee=user)
+        except User.DoesNotExist:
+            raise Http404
+        except Employee.DoesNotExist:
+            raise Http404
 
 
 class SalaryViewSet(viewsets.ModelViewSet):
@@ -53,16 +74,19 @@ class SalaryViewSet(viewsets.ModelViewSet):
 
         serializer = SalaryPaymentSerializer(data=request.data)
         if serializer.is_valid():
+            effective_from = serializer.validated_data.get('effective_from')
+            effective_to = serializer.validated_data.get('effective_to')
+
+            # Update the salary fields
+            salary.effective_from = effective_from
+            salary.effective_to = effective_to
             salary.is_paid = True
             salary.payment_date = timezone.now()
-            salary.effective_from = serializer.validated_data.get(
-                'effective_from')
-            salary.effective_to = serializer.validated_data.get('effective_to')
             salary.save()
+
             return Response(SalarySerializer(salary).data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class ParkownerProfileUpdateView(generics.RetrieveUpdateAPIView):
     queryset = models.ParkOwner.objects.all()
@@ -496,20 +520,22 @@ class AdminDashboardViewSet(viewsets.ViewSet):
 
             # Append data to the list
             park_owners_with_subscription_data.append({
-                "park_owner_id": park_owner.id,
+                "park_owner_id": park_owner.park_owner_id.id,
                 "username": park_owner.park_owner_id.username,
                 "total_earnings": earnings,
                 "total_salary_cost": salary_cost,
                 "park_owner_net_revenue": park_owner_net_revenue,
                 "subscription": subscription_data,
                 "customer_count": customer_count,
-                "customers": customer_details
+                "customers": customer_details,
+                "is_active": park_owner.park_owner_id.is_active
             })
 
         # List of park owners without a subscription
         park_owners_without_subscription_data = [
-            {"park_owner_id": park_owner.id,
-                "username": park_owner.park_owner_id.username}
+            {"park_owner_id": park_owner.park_owner_id.id,
+                "username": park_owner.park_owner_id.username,
+                "is_active": park_owner.park_owner_id.is_active}
             for park_owner in park_owners_without_subscription
         ]
 
@@ -534,3 +560,68 @@ class AdminDashboardViewSet(viewsets.ViewSet):
         }
 
         return Response(admin_dashboard_data)
+
+
+class UserActivationViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=True, methods=['post'])
+    def activate(self, request, pk=None):
+        user_type = request.data.get('user_type')
+        try:
+            user = User.objects.get(pk=pk)
+            if user_type == 'park_owner':
+                park_owner = ParkOwner.objects.get(park_owner_id=user)
+                # Activate the park owner
+                user.is_active = True
+                user.save()
+                return Response({"message": "Park owner activated successfully."})
+            elif user_type == 'customer':
+                customer = Customer.objects.get(customer_id=user)
+                # Activate the customer
+                user.is_active = True
+                user.save()
+                return Response({"message": "Customer activated successfully."})
+            elif user_type == 'employee':
+                employee = Employee.objects.get(employee=user)
+                # Activate the employee
+                user.is_active = True
+                user.save()
+                return Response({"message": "Employee activated successfully."})
+            else:
+                return Response({"error": "Invalid user type."}, status=status.HTTP_400_BAD_REQUEST)
+        except (User.DoesNotExist, ParkOwner.DoesNotExist, Customer.DoesNotExist, Employee.DoesNotExist):
+            return Response({"error": "User does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=True, methods=['post'])
+    def deactivate(self, request, pk=None):
+        user_type = request.data.get('user_type')
+        try:
+            user = User.objects.get(pk=pk)
+            if user_type == 'park_owner':
+                park_owner = ParkOwner.objects.get(park_owner_id=user)
+                # Deactivate the park owner
+                user.is_active = False
+                user.save()
+                return Response({"message": "Park owner deactivated successfully."})
+            elif user_type == 'customer':
+                customer = Customer.objects.get(customer_id=user)
+                # Deactivate the customer
+                user.is_active = False
+                user.save()
+                return Response({"message": "Customer deactivated successfully."})
+            elif user_type == 'employee':
+                employee = Employee.objects.get(employee=user)
+                # Deactivate the employee
+                user.is_active = False
+                user.save()
+                return Response({"message": "Employee deactivated successfully."})
+            else:
+                return Response({"error": "Invalid user type."}, status=status.HTTP_400_BAD_REQUEST)
+        except (User.DoesNotExist, ParkOwner.DoesNotExist, Customer.DoesNotExist, Employee.DoesNotExist):
+            return Response({"error": "User does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+
+# {
+#     "user_type": "employee"
+# }
