@@ -1,3 +1,4 @@
+from django.http import Http404
 from django.shortcuts import render
 from rest_framework import viewsets
 from . import models
@@ -35,10 +36,30 @@ class ParkownerProfileViewset(viewsets.ModelViewSet):
     queryset = ParkOwner.objects.all()
     serializer_class = serializers.ParkownerProfileSerializer
 
+    def get_object(self):
+        user_id = self.kwargs.get('pk')
+        try:
+            user = User.objects.get(pk=user_id)
+            return ParkOwner.objects.get(park_owner_id=user)
+        except User.DoesNotExist:
+            raise Http404
+        except ParkOwner.DoesNotExist:
+            raise Http404
+
 
 class EmployeeProfileViewset(viewsets.ModelViewSet):
     queryset = Employee.objects.all()
     serializer_class = serializers.EmployeeSerializer
+
+    def get_object(self):
+        user_id = self.kwargs.get('pk')
+        try:
+            user = User.objects.get(pk=user_id)
+            return Employee.objects.get(employee=user)
+        except User.DoesNotExist:
+            raise Http404
+        except Employee.DoesNotExist:
+            raise Http404
 
 
 class SalaryViewSet(viewsets.ModelViewSet):
@@ -499,20 +520,22 @@ class AdminDashboardViewSet(viewsets.ViewSet):
 
             # Append data to the list
             park_owners_with_subscription_data.append({
-                "park_owner_id": park_owner.id,
+                "park_owner_id": park_owner.park_owner_id.id,
                 "username": park_owner.park_owner_id.username,
                 "total_earnings": earnings,
                 "total_salary_cost": salary_cost,
                 "park_owner_net_revenue": park_owner_net_revenue,
                 "subscription": subscription_data,
                 "customer_count": customer_count,
-                "customers": customer_details
+                "customers": customer_details,
+                "is_active": park_owner.park_owner_id.is_active
             })
 
         # List of park owners without a subscription
         park_owners_without_subscription_data = [
-            {"park_owner_id": park_owner.id,
-                "username": park_owner.park_owner_id.username}
+            {"park_owner_id": park_owner.park_owner_id.id,
+                "username": park_owner.park_owner_id.username,
+                "is_active": park_owner.park_owner_id.is_active}
             for park_owner in park_owners_without_subscription
         ]
 
