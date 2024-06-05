@@ -13,9 +13,10 @@ class UserDetailsSerializer(serializers.ModelSerializer):
     username = serializers.CharField(read_only=True)
     class Meta:
         model = User
-        fields = ['id','username','email', 'first_name', 'last_name']
+        fields = ['id','username','email', 'first_name', 'last_name','is_active']
 
 class ParkownerProfileSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source='park_owner_id.id', read_only=True)
     park_owner_id = UserDetailsSerializer()
     class Meta:
         model = ParkOwner
@@ -38,10 +39,26 @@ class ParkownerProfileSerializer(serializers.ModelSerializer):
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source='employee.id', read_only=True)
     employee = UserDetailsSerializer()
+    
     class Meta:
         model = Employee
         fields = '__all__'
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('employee', {})
+        user_serializer = self.fields['employee']
+        user_instance = instance.employee
+
+        for attr, value in user_data.items():
+            setattr(user_instance, attr, value)
+        user_instance.save()
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        return instance
         
 
 class SalarySerializer(serializers.ModelSerializer):
