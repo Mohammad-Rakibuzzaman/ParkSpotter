@@ -53,16 +53,19 @@ class SalaryViewSet(viewsets.ModelViewSet):
 
         serializer = SalaryPaymentSerializer(data=request.data)
         if serializer.is_valid():
+            effective_from = serializer.validated_data.get('effective_from')
+            effective_to = serializer.validated_data.get('effective_to')
+
+            # Update the salary fields
+            salary.effective_from = effective_from
+            salary.effective_to = effective_to
             salary.is_paid = True
             salary.payment_date = timezone.now()
-            salary.effective_from = serializer.validated_data.get(
-                'effective_from')
-            salary.effective_to = serializer.validated_data.get('effective_to')
             salary.save()
+
             return Response(SalarySerializer(salary).data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class ParkownerProfileUpdateView(generics.RetrieveUpdateAPIView):
     queryset = models.ParkOwner.objects.all()
